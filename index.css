@@ -1,0 +1,230 @@
+@import url("https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;700;800&display=swap");
+body{
+    background: #232427;
+    font-family: "Poppins", sans-serif;
+}
+
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    background-color: rgba(30, 30, 30, 0.8); /* Hafif şeffaf koyu gri */
+}
+
+/* Sol ve sağdaki bağlantılar için */
+.navbar-left, .navbar-right {
+    display: flex;
+    align-items: center;
+}
+
+.navbar-left a, .navbar-right a {
+    color: #ffffff;
+    text-decoration: none;
+    padding: 8px 12px;
+    margin-right: 10px;
+}
+
+/* Çıkış Yap butonu */
+.navbar-right a.logout {
+    color: red;
+    font-weight: bold;
+}
+
+/* Ana Kartlar ve Kart Kapsayıcı */
+.card-container {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    margin-top: 285px; /* Navbar'ın altında biraz boşluk */
+    padding: 20px;
+    opacity: 1;
+    transition: opacity 0.5s ease; /* Ana kartların görünürlük geçişi */
+}
+
+/* Kart stili */
+.card {
+    background-color: #333;
+    color: #fff;
+    width: 200px;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    transition: transform 0.5s ease, box-shadow 0.3s ease, opacity 0.5s ease;
+    text-align: center;
+    cursor: pointer;
+}
+
+/* Hover efekti */
+.card:hover {
+    transform: scale(1.05);
+    box-shadow: 0 8px 16px rgba(255, 255, 255, 0.3);
+}
+
+/* Detay kartı */
+.detail-card {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0); /* Başlangıçta gizli */
+    width: 80%;
+    max-width: 600px;
+    background-color: #333;
+    color: #fff;
+    padding: 30px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    display: none; /* Başlangıçta görünmesin */
+    flex-direction: column;
+    align-items: flex-start;
+    z-index: 10;
+    opacity: 0;
+    transition: transform 0.7s ease, opacity 0.7s ease; /* Daha yumuşak geçiş */
+}
+
+/* Detay kartı görünür olduğunda */
+.detail-card.show {
+    transform: translate(-50%, -50%) scale(1); /* Görünür hale gelince genişlesin */
+    opacity: 1;
+    display: flex; /* Görünür hale geldiğinde flex olmalı */
+}
+
+/* Geri butonu */
+.back-button {
+    background-color: #ff4d4d;
+    color: #fff;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-bottom: 15px;
+}
+
+.back-button:hover {
+    background-color: #ff1a1a;
+}
+.menu-container {
+    width: 80%;
+    max-width: 700px;
+    margin: 0 auto; /* Bu satır sayfada ortalanmasını sağlar */
+    padding: 20px;
+    box-sizing: border-box; /* İçerik ve padding'leri hesaba katarak düzenleme yapar */
+}
+h1 {
+    font-size: 2rem;
+    text-align: center;
+    margin-bottom: 20px;
+    color: #fff;
+}
+
+.category {
+    background-color: #1f1f1f;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+.category span{
+    color: #fff;
+}
+
+.category h2 {
+    font-size: 1.5rem;
+    margin-bottom: 15px;
+    color: #f1f1f1;
+}
+
+.menu-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.menu-item span {
+    flex: 1;
+}
+
+.menu-item label {
+    margin-right: 5px;
+}
+
+.menu-item input[type="number"] {
+    width: 50px;
+    padding: 5px;
+    border-radius: 5px;
+    border: none;
+    text-align: center;
+}
+
+.order-btn {
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-left: 15px;
+}
+
+.order-btn:hover {
+    background-color: #0056b3;
+
+}
+.user-management-container {
+    width: 80%;
+    max-width: 1000px;
+    margin: 50px auto;
+    padding: 20px;
+    background-color: #1f1f1f; /* Mevcut arka plan rengi */
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Tablo stili */
+.user-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+}
+
+.user-table th, .user-table td {
+    padding: 10px;
+    text-align: left;
+    border-bottom: 1px solid #555;
+}
+
+.user-table th {
+    background-color: #444; /* Başlık hücreleri için mevcut renk */
+    font-weight: bold;
+}
+
+.user-table td {
+    background-color: #2c2f33; /* Veri hücreleri için mevcut renk */
+}
+
+.user-table tr:hover {
+    background-color: #3a3e44; /* Satır üzerine gelindiğinde renk */
+}
+
+/* Butonlar */
+.delete-btn, .toggle-admin-btn {
+    background-color: #ff4d4d; /* Silme butonu için mevcut kırmızı tonları */
+    color: #fff;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-right: 10px;
+}
+
+.toggle-admin-btn {
+    background-color: #007bff; /* Admin butonu için mevcut mavi tonları */
+}
+
+.delete-btn:hover {
+    background-color: #ff1a1a; /* Silme butonu hover efekti */
+}
+
+.toggle-admin-btn:hover {
+    background-color: #0056b3; /* Admin butonu hover efekti */
+}

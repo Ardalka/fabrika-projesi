@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sipariş Menü</title>
+    <link rel="stylesheet" href="index.css">
+</head>
+<body>
+    <div class="navbar">
+        <div class="navbar-left">
+            <a href="index.html">Ana Sayfa</a>
+            <a href="satis.html">Satış</a>
+            <a href="#raporlar">Raporlar</a>
+            <a href="kullanici.html">Kullanıcılar</a>
+        </div>
+    
+        <div class="navbar-right">
+            <a href="#profil">Kullanıcı Adı</a>
+            <a href="#cikis" class="logout">Çıkış Yap</a>
+        </div>
+    </div>
+
+<div class="menu-container">
+    <h1>Araba Parçaları</h1>
+
+    <!-- Fast Food Kategorisi -->
+    <div class="category">
+        <h2>Fast Food</h2>
+        <div class="menu-item">
+            <span>Burger - 50 TL</span>
+            <label for="burger-qty" style="color: #fff;">Miktar:</label>
+            <input type="number" id="burger-qty" min="1" value="1">
+            <button class="order-btn">Sipariş Ver</button>
+        </div>
+        <div class="menu-item">
+            <span>Pizza - 70 TL</span>
+            <label for="pizza-qty" style="color: #fff;">Miktar:</label>
+            <input type="number" id="pizza-qty" min="1" value="1">
+            <button class="order-btn">Sipariş Ver</button>
+        </div>
+    </div>
+
+    <!-- Tatlılar Kategorisi -->
+    <div class="category">
+        <h2>Tatlılar</h2>
+        <div class="menu-item">
+            <span>Pasta - 40 TL</span>
+            <label for="pasta-qty" style="color: #fff;">Miktar:</label>
+            <input type="number" id="pasta-qty" min="1" value="1">
+            <button class="order-btn">Sipariş Ver</button>
+        </div>
+    </div>
+
+</div>
+
+</body>
+</html>
