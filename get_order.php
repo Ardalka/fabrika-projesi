@@ -3,7 +3,7 @@
 $servername = "localhost";
 $username = "root";
 $password = ""; // Şifreniz varsa buraya ekleyin
-$dbname = "araba_fabrikası"; // Veritabanı adını buraya güncelledik
+$dbname = "arabafabrikası"; // Veritabanı adını buraya güncelledik
 
 // Bağlantıyı kur
 $conn = new mysqli($servername, $username, $password, $dbname);
