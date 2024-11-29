@@ -79,30 +79,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 throw new Exception("Bu parça için uygun makine bulunamadı.");
             }
         
-            // Parçayı üretmeden önce stok kontrolü ve azaltma
-            foreach ($parca->malzemeler as $malzemeBilgi) {
-                $malzeme = $malzemeBilgi['malzeme'];
-                $gerekliMiktar = $malzemeBilgi['miktar'] * $adet;
-        
-                // Stok kontrolü
-                if ($malzeme->stokMiktari < $gerekliMiktar) {
-                    throw new Exception("Yetersiz stok: " . $malzeme->ad);
-                }
-        
-                // Stok miktarını azalt
-                $malzeme->stokMiktari -= $gerekliMiktar;
-        
-                // Veritabanını güncelle
-                $stmt = $pdo->prepare("UPDATE malzemeler SET StokMiktari = StokMiktari - :gerekliMiktar WHERE MalzemeAdi = :malzemeAdi");
-                $stmt->execute([
-                    ':gerekliMiktar' => $gerekliMiktar,
-                    ':malzemeAdi' => $malzeme->ad
-                ]);
-            }
-        
             // Parçayı üret
             $uretimSonucu = $makine->calis($parca, $adet);
             $toplamFiyat = $parca->satisFiyati * $adet;
+        
+            // Veritabanına makine verilerini güncelle
+            $stmt = $pdo->prepare("UPDATE makineler 
+                                   SET CalismaSaati = CalismaSaati + :calismaSaati,
+                                       ElektrikTuketimi = ElektrikTuketimi + :elektrikTuketimi,
+                                       KarbonAyakIzi = KarbonAyakIzi + :karbonAyakIzi
+                                   WHERE MakineAdi = :makineAdi");
+            $stmt->execute([
+                ':calismaSaati' => $uretimSonucu['toplamSure'],
+                ':elektrikTuketimi' => $uretimSonucu['toplamElektrik'],
+                ':karbonAyakIzi' => $uretimSonucu['toplamKarbonAyakIzi'],
+                ':makineAdi' => $makine->ad
+            ]);
         
             // Veritabanına üretim ve satış bilgilerini kaydet
             $pdo->beginTransaction();
