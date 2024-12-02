@@ -116,6 +116,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     </div>
 </div>
+<button class="theme-toggle" id="themeToggle">Tema Değiştir</button>
 <script src="login.js"></script>
 </body>
 </html>
