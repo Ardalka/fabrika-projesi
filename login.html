@@ -1,42 +1,48 @@
-<html>
-    <head>
-        <link rel="stylesheet" href="login.css">
-    </head>
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Giriş Yap</title>
+	<link rel="stylesheet" href="login.css">
+</head>
 <body>
-    <h2></h2>
-    <div class="container" id="container">
-        <div class="form-container sign-up-container">
-            <form action="#">
-                <h1 style="color: black;">Hesap Oluştur</h1>
-                <input type="text" id="isim" placeholder="İsim"  />
-                <input type="email" id="email-kayıt" placeholder="Email" />
-                <input type="password" id="password-kayıt" placeholder="Şifre" />
-                <button type="submit" id="kayit" style="border: 0;">Kayıt Ol</button> 
-            </form>
-        </div>
-        <div class="form-container sign-in-container">
-            <form action="#">
-                <h1 style="color:black;">Giriş Yap</h1>
-                <input type="email" id="email-giriş" placeholder="Email" />
-                <input type="password" id="password-giriş" placeholder="Şifre" />
-                <button type="submit" id="giris"style="border: 0;">Giriş Yap</button>
-            </form>
-        </div>
-        <div class="overlay-container">
-            <div class="overlay">
-                <div class="overlay-panel overlay-left">
-                    <h1>Hoş Geldin</h1>
-                    <p>Zaten hesabın var ise burdan giriş yapabilirsin.</p>
-                    <button class="ghost" id="signIn">Giriş Yap</button>
-                </div>
-                <div class="overlay-panel overlay-right">
-                    <h1>Merhaba</h1>
-                    <p>Kişisel bilgilerini buraya gir ve sitemizde gezintiye başla.</p>
-                    <button class="ghost" id="signUp">Kayıt Ol</button>
-                </div>
-            </div>
-        </div>
-    </div>
-    <script src="login.js"></script>
+<div class="container" id="container">
+	<div class="form-container sign-up-container">
+		<form action="#">
+			<h1>Hesap Oluştur</h1>
+			<span>E-posta adresinizle kayıt olun</span>
+			<input type="text" placeholder="Ad Soyad" />
+			<input type="email" placeholder="E-posta" />
+			<input type="password" placeholder="Şifre" />
+			<button>Kayıt Ol</button>
+		</form>
+	</div>
+	<div class="form-container sign-in-container">
+		<form action="#">
+			<h1>Giriş Yap</h1>
+			<input type="email" placeholder="E-posta" />
+			<input type="password" placeholder="Şifre" />
+			<a href="#">Şifrenizi mi unuttunuz?</a>
+			<button>Giriş Yap</button>
+		</form>
+	</div>
+	<div class="overlay-container">
+		<div class="overlay">
+			<div class="overlay-panel overlay-left">
+				<h1>Tekrar Hoş Geldiniz!</h1>
+				<p>Bize katılmak için kişisel bilgilerinizi girerek giriş yapabilirsiniz</p>
+				<button class="ghost" id="signIn">Giriş Yap</button>
+			</div>
+			<div class="overlay-panel overlay-right">
+				<h1>Merhaba, Arkadaş!</h1>
+				<p>Kişisel bilgilerinizi girerek bizimle bir yolculuğa başlayın</p>
+				<button class="ghost" id="signUp">Hesap Oluştur</button>
+			</div>
+		</div>
+	</div>
+</div>
+<button class="theme-toggle" id="themeToggle">Tema Değiştir</button>
+<script src="login.js"></script>
 </body>
 </html>
