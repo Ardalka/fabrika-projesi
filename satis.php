@@ -1,16 +1,19 @@
 <?php
-require 'db.php';
+require 'db.php'; // Veritabanı bağlantısı
 require 'makine.php';
 require 'malzeme.php';
 require 'parca.php';
 
-// Malzemeleri ve parçaları burada tanımlıyoruz
+$message = '';
+
+// Malzeme tanımları
 $plastik = new Malzeme("Plastik", 500, 5);
-$deri = new Malzeme("Deri", 500, 15);
 $aluminyum = new Malzeme("Alüminyum", 500, 25);
 $celik = new Malzeme("Çelik", 500, 20);
 $cam = new Malzeme("Cam", 500, 10);
+$deri = new Malzeme("Deri", 500, 15);
 
+// Parça tanımları
 $kaput = new Parca("Kaput", 325, 325 * 1.5);
 $kaput->malzemeEkle($aluminyum, 5);
 $kaput->malzemeEkle($celik, 10);
@@ -36,18 +39,6 @@ $vites = new Parca("Vites", 175, 175 * 1.5);
 $vites->malzemeEkle($deri, 5);
 $vites->malzemeEkle($celik, 5);
 
-$makineA = new Makine("Makine A", 36, 30, 3);
-$makineA->parcaEkle($kaput);
-$makineA->parcaEkle($lastik);
-
-$makineB = new Makine("Makine B", 20, 18, 1);
-$makineB->parcaEkle($ayna);
-$makineB->parcaEkle($far);
-
-$makineC = new Makine("Makine C", 16, 20, 2);
-$makineC->parcaEkle($direksiyon);
-$makineC->parcaEkle($vites);
-
 $parcalar = [
     'Kaput' => $kaput,
     'Ayna' => $ayna,
@@ -57,81 +48,101 @@ $parcalar = [
     'Vites' => $vites
 ];
 
-// POST ile form verilerini işleme
+// Makine tanımları
+$makineA = new Makine("Makine A", 30, 10, 4, 1.5); // Yavaş makine
+$makineB = new Makine("Makine B", 50, 60, 1, 1.7); // Hızlı makine
+$makineC = new Makine("Makine C", 30, 15, 3, 1.6); // Orta makine
+
+$makineler = [$makineA, $makineB, $makineC];
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $parcaAdi = $_POST['parca'];
     $adet = intval($_POST['adet']);
+    $secilenMakineID = intval($_POST['makine']); // Kullanıcıdan seçilen makine
 
     if (isset($parcalar[$parcaAdi])) {
         $parca = $parcalar[$parcaAdi];
+        $makine = $makineler[$secilenMakineID - 1]; // Kullanıcının seçtiği makine
 
         try {
-            // Makineyi seçiyoruz
-            $makine = null;
-            foreach ([$makineA, $makineB, $makineC] as $m) {
-                if (in_array($parca, $m->uretebildigiParcalar)) {
-                    $makine = $m;
-                    break;
-                }
-            }
-        
-            if ($makine === null) {
-                throw new Exception("Bu parça için uygun makine bulunamadı.");
-            }
-        
-            // Parçayı üret
+            $pdo->beginTransaction(); // İşlemi başlat
+
+            // Parçayı üret ve fiyatı hesapla
             $uretimSonucu = $makine->calis($parca, $adet);
-            $toplamFiyat = $parca->satisFiyati * $adet;
-        
-            // Veritabanına makine verilerini güncelle
+            $toplamFiyat = $makine->fiyatHesapla($parca, $adet); // Makineye göre fiyat
+            $makine->saglikAzalt(1 * $adet); // Her parça üretiminde sağlık %1 azalır
+             // Makine verilerini güncelle
             $stmt = $pdo->prepare("UPDATE makineler 
                                    SET CalismaSaati = CalismaSaati + :calismaSaati,
                                        ElektrikTuketimi = ElektrikTuketimi + :elektrikTuketimi,
-                                       KarbonAyakIzi = KarbonAyakIzi + :karbonAyakIzi
-                                   WHERE MakineAdi = :makineAdi");
+                                       KarbonAyakIzi = KarbonAyakIzi + :karbonAyakIzi,
+                                       SaglikDurumu = :saglikDurumu
+                                   WHERE MakineID = :makineID");
             $stmt->execute([
                 ':calismaSaati' => $uretimSonucu['toplamSure'],
                 ':elektrikTuketimi' => $uretimSonucu['toplamElektrik'],
                 ':karbonAyakIzi' => $uretimSonucu['toplamKarbonAyakIzi'],
-                ':makineAdi' => $makine->ad
+                ':saglikDurumu' => $makine->saglikDurumu,
+                ':makineID' => $secilenMakineID
             ]);
-        
-            // Veritabanına üretim ve satış bilgilerini kaydet
-            $pdo->beginTransaction();
-        
-            // Üretim verisi
+            
+
+            // Stok kontrolü ve azaltma işlemi
             foreach ($parca->malzemeler as $malzemeBilgi) {
-                $stmt = $pdo->prepare("INSERT INTO uretimler (ParcaAdi, MalzemeAdi, KullanilanAdet) 
-                                       VALUES (:parcaAdi, :malzemeAdi, :kullanilanAdet)");
+                $malzeme = $malzemeBilgi['malzeme'];
+                $gerekliMiktar = $malzemeBilgi['miktar'] * $adet;
+
+                // Stok kontrolü
+                if ($malzeme->stokMiktari < $gerekliMiktar) {
+                    throw new Exception("Yetersiz stok: " . $malzeme->ad);
+                }
+
+                // Stok azalt
+                $malzeme->stokMiktari -= $gerekliMiktar;
+
+                // Veritabanında stok güncelle
+                $stmt = $pdo->prepare("UPDATE malzemeler SET StokMiktari = StokMiktari - :gerekliMiktar WHERE MalzemeAdi = :malzemeAdi");
+                $stmt->execute([
+                    ':gerekliMiktar' => $gerekliMiktar,
+                    ':malzemeAdi' => $malzeme->ad
+                ]);
+            }
+
+            // Üretim verisini kaydet
+            foreach ($parca->malzemeler as $malzemeBilgi) {
+                $stmt = $pdo->prepare("INSERT INTO uretimler (ParcaAdi, MakineID, MalzemeAdi, KullanilanAdet) 
+                                       VALUES (:parcaAdi, :makineID, :malzemeAdi, :kullanilanAdet)");
                 $stmt->execute([
                     ':parcaAdi' => $parca->ad,
+                    ':makineID' => $secilenMakineID,
                     ':malzemeAdi' => $malzemeBilgi['malzeme']->ad,
                     ':kullanilanAdet' => $malzemeBilgi['miktar'] * $adet
                 ]);
             }
-        
-            // Satış verisi
-            $stmt = $pdo->prepare("INSERT INTO satislar (ParcaAdi, Miktar, ToplamFiyat) 
-                                   VALUES (:parcaAdi, :miktar, :toplamFiyat)");
+
+            // Satış verisini kaydet
+            $stmt = $pdo->prepare("INSERT INTO satislar (ParcaAdi, MakineID, Miktar, ToplamFiyat) 
+                                   VALUES (:parcaAdi, :makineID, :miktar, :toplamFiyat)");
             $stmt->execute([
                 ':parcaAdi' => $parca->ad,
+                ':makineID' => $secilenMakineID,
                 ':miktar' => $adet,
                 ':toplamFiyat' => $toplamFiyat
             ]);
-        
-            $pdo->commit();
-        
-            $message = "Satış başarılı! {$adet} adet {$parca->ad} üretildi ve satıldı.";
+
+            $pdo->commit(); // İşlemi tamamla
+            $message = "Satış başarılı! {$adet} adet {$parca->ad} üretildi ve Makine {$secilenMakineID} kullanıldı.";
         } catch (Exception $e) {
-            $pdo->rollBack();
+            $pdo->rollBack(); // Hata durumunda işlemi geri al
             $message = "Hata: " . $e->getMessage();
         }
-        
     } else {
         $message = "Geçersiz parça seçimi.";
     }
 }
 ?>
+
+
 
 <!DOCTYPE html>
 <html lang="en">
@@ -152,9 +163,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <?php endforeach; ?>
         </select>
         <br>
+
         <label for="adet">Adet:</label>
         <input type="number" name="adet" id="adet" min="1" required>
         <br>
+
+        <label for="makine">Makine Seçin:</label>
+        <select name="makine" id="makine">
+            <option value="1">Makine A (Yavaş - Düşük Fiyat)</option>
+            <option value="2">Makine B (Hızlı - Yüksek Fiyat)</option>
+            <option value="3">Makine C (Orta Hız - Orta Fiyat)</option>
+        </select>
+        <br>
+
         <button type="submit">Satın Al</button>
     </form>
 </body>

@@ -1,41 +1,53 @@
 <?php
 class Makine {
     public $ad;
-    public $karbonAyakIzi;
-    public $elektrikTuketimi;
-    public $uretimSuresi;
+    public $karbonAyakIziSaatlik;
+    public $elektrikTuketimiSaatlik;
+    public $uretimSuresiFaktor;
+    public $saglikDurumu;
+    public $fiyatFaktor; // Fiyat çarpanı
     public $calismaSaati = 0;
-    public $uretebildigiParcalar = []; // Makinenin üretebileceği parçalar
+    public $elektrikTuketimi = 0;
+    public $karbonAyakIzi = 0;
 
-    public function __construct($ad, $karbonAyakIzi, $elektrikTuketimi, $uretimSuresi) {
+    public function __construct($ad, $karbonAyakIziSaatlik, $elektrikTuketimiSaatlik, $uretimSuresiFaktor, $fiyatFaktor, $saglikDurumu = 100) {
         $this->ad = $ad;
-        $this->karbonAyakIzi = $karbonAyakIzi;
-        $this->elektrikTuketimi = $elektrikTuketimi;
-        $this->uretimSuresi = $uretimSuresi;
+        $this->karbonAyakIziSaatlik = $karbonAyakIziSaatlik;
+        $this->elektrikTuketimiSaatlik = $elektrikTuketimiSaatlik;
+        $this->uretimSuresiFaktor = $uretimSuresiFaktor; // Üretim süresi çarpanı
+        $this->fiyatFaktor = $fiyatFaktor; // Fiyat çarpanı
+        $this->saglikDurumu = $saglikDurumu; // Sağlık durumu
     }
 
-    // Makineye üretebileceği parçaları ekle
-    public function parcaEkle($parca) {
-        $this->uretebildigiParcalar[] = $parca;
-    }
-
-    // Üretim işlemi
     public function calis($parca, $adet) {
-        if (!in_array($parca, $this->uretebildigiParcalar)) {
-            throw new Exception("{$this->ad} makinesi {$parca->ad} üretemez.");
-        }
-
-        $toplamSure = $this->uretimSuresi * $adet;
-        $toplamElektrik = $this->elektrikTuketimi * $adet;
-        $toplamKarbonAyakIzi = $this->karbonAyakIzi * $adet;
+        $toplamSure = $this->uretimSuresiFaktor * $adet; // Üretim süresi
+        $toplamElektrik = $this->elektrikTuketimiSaatlik * $toplamSure; // Elektrik tüketimi
+        $toplamKarbonAyakIzi = $this->karbonAyakIziSaatlik * $toplamSure; // Karbon ayak izi
 
         $this->calismaSaati += $toplamSure;
+        $this->elektrikTuketimi += $toplamElektrik;
+        $this->karbonAyakIzi += $toplamKarbonAyakIzi;
 
         return [
             'toplamSure' => $toplamSure,
             'toplamElektrik' => $toplamElektrik,
             'toplamKarbonAyakIzi' => $toplamKarbonAyakIzi
         ];
+    }
+
+    public function saglikAzalt($miktar) {
+        $this->saglikDurumu -= $miktar;
+        if ($this->saglikDurumu < 0) {
+            $this->saglikDurumu = 0; // Sağlık durumu negatif olamaz
+        }
+    }
+
+    public function bakimYap() {
+        $this->saglikDurumu = 100; // Sağlık durumunu %100'e getir
+    }
+
+    public function fiyatHesapla($parca, $adet) {
+        return ($parca->uretimMaliyeti * $adet) * $this->fiyatFaktor;
     }
 }
 
