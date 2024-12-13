@@ -19,10 +19,13 @@ if (!isset($_SESSION['kullaniciID'])) {
 
 <div class="navbar">
     <div class="navbar-left">
-        <a href="index.html">Ana Sayfa</a>
-        <a href="satis.html">Satış</a>
-        <a href="#raporlar">Raporlar</a>
-        <a href="kullanici.html">Kullanıcılar</a>
+        <a href="index.php">Ana Sayfa</a>
+        <a href="satis.php">Satış</a>
+        <a href="rapor.php">Raporlar</a>
+        <a href="kullanici.php">Kullanıcılar</a>
+        <a href="makineler.php">Makineler</a>
+        <a href="stoklar.php">Stoklar</a>
+        <a href="malzeme_ekle.php">Malzemeler</a>
     </div>
 
     <div class="navbar-right">

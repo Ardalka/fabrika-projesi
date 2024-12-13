@@ -65,13 +65,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $makine = $makineler[$secilenMakineID - 1]; // Kullanıcının seçtiği makine
 
         try {
-            $pdo->beginTransaction(); // İşlemi başlat
+            $pdo->beginTransaction();
 
             // Parçayı üret ve fiyatı hesapla
             $uretimSonucu = $makine->calis($parca, $adet);
             $toplamFiyat = $makine->fiyatHesapla($parca, $adet); // Makineye göre fiyat
             $makine->saglikAzalt(1 * $adet); // Her parça üretiminde sağlık %1 azalır
-             // Makine verilerini güncelle
             $stmt = $pdo->prepare("UPDATE makineler 
                                    SET CalismaSaati = CalismaSaati + :calismaSaati,
                                        ElektrikTuketimi = ElektrikTuketimi + :elektrikTuketimi,

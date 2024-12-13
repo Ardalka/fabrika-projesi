@@ -2,7 +2,6 @@
 require "makine.php";
 require 'db.php';
 
-// Eğer POST ile bir bakım işlemi yapılırsa
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['makineID'])) {
     $makineID = intval($_POST['makineID']);
 

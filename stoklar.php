@@ -1,5 +1,5 @@
 <?php
-require 'db.php'; // Veritabanı bağlantısı
+require 'db.php';
 
 // Stokları çekiyoruz
 try {
