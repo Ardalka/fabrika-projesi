@@ -4,26 +4,36 @@ class Navbar {
     private $menuItems;
     private $userRole;
 
-    public function __construct($role = 'user') {
+    public function __construct($role = null) {
         $this->userRole = $role;
         $this->initializeMenu();
     }
 
     private function initializeMenu() {
-        $this->menuItems = [
-            'Ana Sayfa' => 'index.php',
-            'Satış' => 'sales.php',
-        ];
+        if ($this->userRole === null) {
+            // Kullanıcı giriş yapmamış
+            $this->menuItems = [
+                'Giriş Yap' => 'login.php',
+                'Kayıt Ol' => 'register.php'
+            ];
+        } else {
+            // Kullanıcı giriş yapmış
+            $this->menuItems = [
+                'Ana Sayfa' => 'index.php',
+                'Parçalar' => 'product_showcase.php',
+                'Satış' => 'sales.php',
 
-        if ($this->userRole === 'admin') {
-            $this->menuItems['Malzeme Yönetimi'] = 'material_management.php';
-            $this->menuItems['Ürün Yönetimi'] = 'product_management.php';
-            $this->menuItems['Raporlama'] = 'report.php';
-            $this->menuItems['Makine Yönetimi'] = 'machine_management.php';
-            $this->menuItems['Bakiye Yönetimi'] = 'balance_management.php';
+            ];
+
+            if ($this->userRole === 'admin') {
+                $this->menuItems['Malzeme Yönetimi'] = 'material_management.php';
+                $this->menuItems['Raporlama'] = 'report.php';
+                $this->menuItems['Makine Yönetimi'] = 'machine_management.php';
+                $this->menuItems['Bakiye Yönetimi'] = 'balance_management.php';
+            }
+
+            $this->menuItems['Çıkış Yap'] = 'logout.php';
         }
-
-        $this->menuItems['Çıkış Yap'] = 'logout.php';
     }
 
     public function render() {

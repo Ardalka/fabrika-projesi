@@ -5,20 +5,20 @@ require_once '../Classes/SalesManager.php';
 require_once '../Classes/Navbar.php';
 session_start();
 
-// Kullanıcı yetkilendirmesi
-$userRole = isset($_SESSION['role']) ? $_SESSION['role'] : 'user';
+// Kullanıcı oturumu kontrolü
 if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
     exit();
 }
 
-// Navbar oluştur
+// Kullanıcı rolü ve navbar oluşturma
+$userRole = isset($_SESSION['role']) ? $_SESSION['role'] : 'user';
 $navbar = new Navbar($userRole);
 
 // Sınıf örnekleri
 $product = new Product();
 $machine = new Machine();
-$sales = new SalesManager();
+$salesManager = new SalesManager();
 
 // Ürünler ve makineleri al
 $products = $product->getAllProducts();
@@ -28,17 +28,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
         $productId = $_POST['product'];
         $machineId = $_POST['machine'];
-        $quantity = (int)$_POST['quantity'];
+        $quantity = (int) $_POST['quantity'];
 
         if ($quantity <= 0) {
-            throw new Exception("Geçersiz miktar.");
+            throw new Exception("Miktar 0'dan büyük olmalıdır.");
         }
 
-        // Satışı kaydet
-        $result = $sales->recordSale($_SESSION['user_id'], $productId, $machineId, $quantity);
-        $successMessage = "Satış başarıyla kaydedildi.";
+        $salesManager->recordSale($_SESSION['user_id'], $productId, $machineId, $quantity);
+        $message = "Sipariş başarıyla kaydedildi!";
     } catch (Exception $e) {
-        $errorMessage = $e->getMessage();
+        $message = "Hata: " . $e->getMessage();
     }
 }
 ?>
@@ -53,15 +52,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </head>
 <body>
 <?php $navbar->render(); ?>
+
 <div class="container mt-4">
     <h1>Ürün Satışı</h1>
 
-    <?php if (isset($successMessage)): ?>
-        <div class="alert alert-success"> <?= $successMessage ?> </div>
-    <?php endif; ?>
-
-    <?php if (isset($errorMessage)): ?>
-        <div class="alert alert-danger"> <?= $errorMessage ?> </div>
+    <?php if (isset($message)): ?>
+        <div class="alert alert-info"> <?= htmlspecialchars($message) ?> </div>
     <?php endif; ?>
 
     <form action="" method="POST">
@@ -70,7 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <select id="product" name="product" class="form-select" required>
                 <?php foreach ($products as $prod): ?>
                     <option value="<?= $prod['ProductID'] ?>">
-                        <?= $prod['ProductName'] ?>
+                        <?= htmlspecialchars($prod['ProductName']) ?>
                     </option>
                 <?php endforeach; ?>
             </select>
@@ -81,7 +77,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <select id="machine" name="machine" class="form-select" required>
                 <?php foreach ($machines as $mach): ?>
                     <option value="<?= $mach['MachineID'] ?>">
-                        <?= $mach['MachineName'] ?> (Üretim Hızı: <?= $mach['ProductionRate'] ?>, Enerji: <?= $mach['EnergyConsumption'] ?> kWh, Karbon: <?= $mach['CarbonFootprint'] ?> kg CO2)
+                        <?= htmlspecialchars($mach['MachineName']) ?>
                     </option>
                 <?php endforeach; ?>
             </select>
@@ -95,6 +91,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <button type="submit" class="btn btn-primary">Sipariş Ver</button>
     </form>
 </div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

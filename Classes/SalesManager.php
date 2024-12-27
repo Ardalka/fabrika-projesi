@@ -64,16 +64,22 @@ class SalesManager {
         $machineInstance = new Machine();
         $machineInstance->logMachineStats($machineId, $productionTime, $energyUsed, $carbonProduced);
 
-        // Satış fiyatını hesapla ve bakiyeye ekle
-        $salePrice = array_reduce($productMaterials, function ($total, $material) use ($quantity) {
+        // Sağlık durumunu güncelle
+        $machineInstance->updateMachineHealth($machineId, $productionTime);
+
+        // Satış fiyatını hesapla ve makine fiyat çarpanını uygula
+        $basePrice = array_reduce($productMaterials, function ($total, $material) use ($quantity) {
             return $total + ($material['CostPerUnit'] * $material['Quantity'] * $quantity);
         }, 0);
 
+        $salePrice = $basePrice * $machine['PriceMultiplier']; // Fiyat çarpanı uygulanıyor
+
+        // Bakiye güncelle ve işlem kaydet
         $this->balance->updateBalance($salePrice);
         $this->balance->recordTransaction(
             'sale', 
             $salePrice, 
-            "Satış: Ürün ID {$product['ProductID']}, Adı: {$product['ProductName']}, Miktar: $quantity"
+            "Satış: Ürün ID {$product['ProductID']}, Adı: {$product['ProductName']}, Miktar: $quantity, Makine: {$machine['MachineName']}"
         );
 
         // Satışı kaydet

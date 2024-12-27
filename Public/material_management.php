@@ -21,8 +21,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $material->addMaterial($_POST['name'], $_POST['cost'], $_POST['stock']);
     } elseif (isset($_POST['update'])) {
         $material->updateMaterial($_POST['id'], $_POST['name'], $_POST['cost'], $_POST['stock']);
-    } elseif (isset($_POST['delete'])) {
-        $material->deleteMaterial($_POST['id']);
     } elseif (isset($_POST['addStock'])) {
         $material->purchaseMaterial($_POST['id'], $_POST['quantity']);
     }
@@ -63,7 +61,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <td>
                         <form action="" method="POST" style="display: inline;">
                             <input type="hidden" name="id" value="<?= $mat['MaterialID'] ?>">
-                            <button type="submit" name="delete" class="btn btn-danger btn-sm">Sil</button>
                         </form>
                         <form action="" method="POST" style="display: inline;">
                             <input type="hidden" name="id" value="<?= $mat['MaterialID'] ?>">
@@ -75,23 +72,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <?php endforeach; ?>
         </tbody>
     </table>
-
-    <h2>Yeni Malzeme Ekle</h2>
-    <form action="" method="POST">
-        <div class="mb-3">
-            <label for="name" class="form-label">Malzeme Adı:</label>
-            <input type="text" id="name" name="name" class="form-control" required>
-        </div>
-        <div class="mb-3">
-            <label for="cost" class="form-label">Birim Maliyet:</label>
-            <input type="number" id="cost" name="cost" class="form-control" step="0.01" required>
-        </div>
-        <div class="mb-3">
-            <label for="stock" class="form-label">Stok:</label>
-            <input type="number" id="stock" name="stock" class="form-control" required>
-        </div>
-        <button type="submit" name="add" class="btn btn-primary">Ekle</button>
-    </form>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 </body>

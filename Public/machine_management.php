@@ -15,10 +15,20 @@ $navbar = new Navbar($userRole);
 $machine = new Machine();
 $machines = $machine->getAllMachines();
 
+$machineStats = [];
+foreach ($machines as $mach) {
+    $machineStats[$mach['MachineID']] = $machine->getMachineStats($mach['MachineID']);
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['maintenance'])) {
     $machineId = $_POST['machineId'];
-    $machine->performMaintenance($machineId);
-    header('Location: machine_management.php');
+    try {
+        $result = $machine->performMaintenance($machineId);
+        $_SESSION['successMessage'] = $result; // Mesajı oturumda sakla
+    } catch (Exception $e) {
+        $_SESSION['errorMessage'] = $e->getMessage(); // Hata mesajını oturumda sakla
+    }
+    header('Location: machine_management.php'); // Sayfayı yenile
     exit();
 }
 ?>
@@ -35,6 +45,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['maintenance'])) {
 <?php $navbar->render(); ?>
 <div class="container mt-4">
     <h1>Makine Yönetimi</h1>
+
+    <?php if (isset($_SESSION['successMessage'])): ?>
+        <div class="alert alert-success">
+            <?= $_SESSION['successMessage'] ?>
+        </div>
+        <?php unset($_SESSION['successMessage']); ?>
+    <?php endif; ?>
+
+    <?php if (isset($_SESSION['errorMessage'])): ?>
+        <div class="alert alert-danger">
+            <?= $_SESSION['errorMessage'] ?>
+        </div>
+        <?php unset($_SESSION['errorMessage']); ?>
+    <?php endif; ?>
+
     <table class="table table-bordered">
         <thead>
             <tr>
@@ -43,17 +68,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['maintenance'])) {
                 <th>Toplam Elektrik Tüketimi (kWh)</th>
                 <th>Toplam Karbon Ayak İzi (kg CO2)</th>
                 <th>Sağlık Durumu (%)</th>
+                <th>Bakım Maliyeti (TL)</th>
                 <th>İşlemler</th>
             </tr>
         </thead>
         <tbody>
             <?php foreach ($machines as $mach): ?>
+                <?php 
+                    $stats = $machineStats[$mach['MachineID']] ?? null;
+                    $healthDeficit = 100 - $mach['Health'];
+                    $maintenanceCost = $healthDeficit * $mach['MaintenanceCostPerUnit'];
+                ?>
                 <tr>
-                    <td><?= $mach['MachineName'] ?></td>
-                    <td><?= $mach['TotalWorkTime'] ?></td>
-                    <td><?= $mach['TotalEnergyUsed'] ?></td>
-                    <td><?= $mach['TotalCarbonProduced'] ?></td>
-                    <td><?= $mach['Health'] ?>%</td>
+                    <td><?= htmlspecialchars($mach['MachineName']) ?></td>
+                    <td><?= $stats['TotalWorkTime'] ?? 0 ?></td>
+                    <td><?= $stats['TotalEnergyUsed'] ?? 0 ?></td>
+                    <td><?= $stats['TotalCarbonProduced'] ?? 0 ?></td>
+                    <td><?= htmlspecialchars($mach['Health']) ?>%</td>
+                    <td><?= $mach['Health'] < 100 ? number_format($maintenanceCost, 2) : '-' ?></td>
                     <td>
                         <?php if ($mach['Health'] < 100): ?>
                             <form method="POST">

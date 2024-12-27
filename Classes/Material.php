@@ -45,33 +45,45 @@ class Material {
         );
     }
 
-    public function purchaseMaterial($id, $quantity) {
+    public function purchaseMaterial($materialId, $quantity) {
         // Malzeme bilgilerini al
-        $material = $this->db->fetch("SELECT * FROM Materials WHERE MaterialID = :id", [':id' => $id]);
-
+        $material = $this->db->fetch("SELECT * FROM Materials WHERE MaterialID = :id", [':id' => $materialId]);
         if (!$material) {
             throw new Exception("Malzeme bulunamadı.");
         }
 
+        // Toplam maliyeti hesapla
         $totalCost = $material['CostPerUnit'] * $quantity;
 
-        // Bakiye kontrolü
-        if (!$this->balance->isBalanceSufficient($totalCost)) {
-            throw new Exception("Yetersiz bakiye.");
-        }
-
-        // Bakiyeden düş ve geçmiş kaydı ekle
+        // Bakiyeyi güncelle
         $this->balance->updateBalance(-$totalCost);
-        $this->balance->recordTransaction('purchase', -$totalCost, "Malzeme Alımı: {$material['MaterialName']}, Miktar: $quantity");
+        $this->balance->recordTransaction(
+            'purchase', 
+            -$totalCost, 
+            "Satın Alım: Malzeme ID {$material['MaterialID']}, Adı: {$material['MaterialName']}, Miktar: $quantity"
+        );
 
-        // Stok güncelle
+        // Malzeme stoğunu güncelle
         $this->db->execute(
             "UPDATE Materials SET Stock = Stock + :quantity WHERE MaterialID = :id",
             [
                 ':quantity' => $quantity,
-                ':id' => $id
+                ':id' => $materialId
             ]
         );
+
+        // Satın alım kaydı ekle
+        $this->db->execute(
+            "INSERT INTO Purchases (MaterialID, Quantity, TotalCost, PurchaseDate) 
+            VALUES (:materialId, :quantity, :totalCost, NOW())",
+            [
+                ':materialId' => $materialId,
+                ':quantity' => $quantity,
+                ':totalCost' => $totalCost
+            ]
+        );
+
+        return "Malzeme başarıyla satın alındı.";
     }
 }
 ?>

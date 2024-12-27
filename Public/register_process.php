@@ -1,32 +1,32 @@
 <?php
-require_once '../Core/Config.php';
 require_once '../Core/DB.php';
+$db = new DB();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = $_POST['username'];
-    $password = $_POST['password'];
+    $email = $_POST['email'];
+    $password = password_hash($_POST['password'], PASSWORD_DEFAULT);
+    $role = $_POST['role'];
 
-    $db = new DB();
-
-    // Kullanıcı adı kontrolü
-    $existingUser = $db->fetch(
-        "SELECT * FROM Users WHERE UserName = :username",
-        [':username' => $username]
-    );
-
-    if ($existingUser) {
-        echo "Bu kullanıcı adı zaten alınmış.";
-    } else {
-        // Kullanıcı ekle
+    try {
         $db->execute(
-            "INSERT INTO Users (UserName, PasswordHash, Role) VALUES (:username, :password, 'user')",
+            "INSERT INTO Users (Username, Email, Password, Role) VALUES (:username, :email, :password, :role)",
             [
                 ':username' => $username,
-                ':password' => hash('sha256', $password)
+                ':email' => $email,
+                ':password' => $password,
+                ':role' => $role
             ]
         );
         header('Location: login.php');
         exit();
+    } catch (PDOException $e) {
+        // Eğer email benzersiz değilse bir hata göster
+        if ($e->getCode() === '23000') {
+            echo "Bu e-posta adresi zaten kullanılıyor.";
+        } else {
+            echo "Bir hata oluştu: " . $e->getMessage();
+        }
     }
 }
 ?>
