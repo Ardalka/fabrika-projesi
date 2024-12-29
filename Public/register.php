@@ -29,7 +29,7 @@
 </head>
 <body>
     <div class="register-card">
-        <h2>Register</h2>
+        <h2>Kayıt Ol</h2>
         <?php if (isset($_GET['error'])): ?>
             <div class="alert alert-danger" role="alert">
                 <?= htmlspecialchars($_GET['error']) ?>
@@ -42,25 +42,25 @@
         <?php endif; ?>
         <form action="process_register.php" method="POST">
             <div class="mb-3">
-                <label for="name" class="form-label">Username</label>
-                <input type="text" id="Username" name="Username" class="form-control" placeholder="Enter your username" required>
+                <label for="name" class="form-label">Kullanıcı Adı</label>
+                <input type="text" id="Username" name="Username" class="form-control" placeholder="Kullanıcı adınızı giriniz" required>
             </div>
             <div class="mb-3">
                 <label for="email" class="form-label">Email</label>
-                <input type="email" id="email" name="email" class="form-control" placeholder="Enter your email" required>
+                <input type="email" id="email" name="email" class="form-control" placeholder="Email giriniz" required>
             </div>
             <div class="mb-3">
-                <label for="password" class="form-label">Password</label>
-                <input type="password" id="password" name="password" class="form-control" placeholder="Enter your password" required>
+                <label for="password" class="form-label">Şifre</label>
+                <input type="password" id="password" name="password" class="form-control" placeholder="Şifrenizi giriniz" required>
             </div>
             <div class="mb-3">
-                <label for="confirm_password" class="form-label">Confirm Password</label>
-                <input type="password" id="confirm_password" name="confirm_password" class="form-control" placeholder="Confirm your password" required>
+                <label for="confirm_password" class="form-label">Şifre Tekrar</label>
+                <input type="password" id="confirm_password" name="confirm_password" class="form-control" placeholder="Şifrenizi Doğrulayınız" required>
             </div>
-            <button type="submit" class="btn btn-primary w-100">Register</button>
+            <button type="submit" class="btn btn-primary w-100">Kayıt ol</button>
         </form>
         <p class="mt-3 text-center">
-            Already have an account? <a href="login.php">Login</a>
+            Zaten hesabın var mı? <a href="login.php">Giriş Yap</a>
         </p>
     </div>
 
