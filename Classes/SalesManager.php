@@ -18,13 +18,13 @@ class SalesManager {
         if (!$product) {
             throw new Exception("Ürün bulunamadı.");
         }
-
+    
         // Makine bilgilerini al
         $machine = $this->db->fetch("SELECT * FROM Machines WHERE MachineID = :id", [':id' => $machineId]);
         if (!$machine) {
             throw new Exception("Makine bulunamadı.");
         }
-
+    
         // Ürün-Malzeme ilişkilerini al
         $productMaterials = $this->db->fetchAll(
             "SELECT pm.MaterialID, pm.Quantity, m.Stock, m.CostPerUnit 
@@ -33,19 +33,19 @@ class SalesManager {
             WHERE pm.ProductID = :productId",
             [':productId' => $productId]
         );
-
+    
         if (!$productMaterials) {
             throw new Exception("Ürün için gerekli malzemeler bulunamadı.");
         }
-
+    
         // Gerekli malzemelerin stoğunu kontrol et ve düş
         foreach ($productMaterials as $material) {
             $requiredQuantity = $material['Quantity'] * $quantity;
-
+    
             if ($material['Stock'] < $requiredQuantity) {
                 throw new Exception("Yetersiz stok: " . $material['MaterialID']);
             }
-
+    
             $this->db->execute(
                 "UPDATE Materials SET Stock = Stock - :quantity WHERE MaterialID = :id",
                 [
@@ -54,26 +54,29 @@ class SalesManager {
                 ]
             );
         }
-
+    
         // Üretim hesaplamaları
         $productionTime = $machine['ProductionRate'] * $quantity;
         $energyUsed = $machine['EnergyConsumption'] * $quantity;
-        $carbonProduced = $machine['CarbonFootprint'] * $quantity;
-
+    
+        // Dinamik karbon ayak izi hesaplama (makinenin sağlığına bağlı)
+        $health = max($machine['Health'], 1); // Sağlık %0 olmamalı, minimum 1 kabul edilir
+        $carbonProduced = $machine['CarbonFootprint'] * $quantity * (100 / $health);
+    
         // Makine verilerini güncelle
         $machineInstance = new Machine();
         $machineInstance->logMachineStats($machineId, $productionTime, $energyUsed, $carbonProduced);
-
+    
         // Sağlık durumunu güncelle
         $machineInstance->updateMachineHealth($machineId, $productionTime);
-
+    
         // Satış fiyatını hesapla ve makine fiyat çarpanını uygula
         $basePrice = array_reduce($productMaterials, function ($total, $material) use ($quantity) {
             return $total + ($material['CostPerUnit'] * $material['Quantity'] * $quantity);
         }, 0);
-
+    
         $salePrice = $basePrice * $machine['PriceMultiplier']; // Fiyat çarpanı uygulanıyor
-
+    
         // Bakiye güncelle ve işlem kaydet
         $this->balance->updateBalance($salePrice);
         $this->balance->recordTransaction(
@@ -81,7 +84,7 @@ class SalesManager {
             $salePrice, 
             "Satış: Ürün ID {$product['ProductID']}, Adı: {$product['ProductName']}, Miktar: $quantity, Makine: {$machine['MachineName']}"
         );
-
+    
         // Satışı kaydet
         $this->db->execute(
             "INSERT INTO Sales (UserID, ProductID, MachineID, Quantity, ProductionTime, EnergyUsed, CarbonProduced) 
@@ -96,8 +99,9 @@ class SalesManager {
                 ':carbon_produced' => $carbonProduced
             ]
         );
-
+    
         return "Satış başarıyla kaydedildi.";
     }
+    
 }
 ?>

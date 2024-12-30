@@ -13,6 +13,21 @@ class Machine {
         return $this->db->fetchAll("SELECT * FROM Machines");
     }
 
+    public function calculateCarbonFootprint($machineId, $baseCarbonFootprint) {
+        $machine = $this->getMachineById($machineId);
+        if (!$machine) {
+            throw new Exception("Makine bulunamadı.");
+        }
+    
+        $health = $machine['Health'];
+        // Sağlık %0 olamaz, minimum 1 olarak kabul edilir.
+        $effectiveHealth = max($health, 1);
+    
+        // Dinamik karbon ayak izi hesaplama
+        return $baseCarbonFootprint * (100 / $effectiveHealth);
+    }
+    
+
     public function getMachineById($machineId) {
         return $this->db->fetch(
             "SELECT * FROM Machines WHERE MachineID = :machine_id",

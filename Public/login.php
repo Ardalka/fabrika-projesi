@@ -29,7 +29,7 @@
 </head>
 <body>
     <div class="login-card">
-        <h2>Login</h2>
+        <h2>Giriş Yap</h2>
         <?php if (isset($_GET['error'])): ?>
             <div class="alert alert-danger" role="alert">
                 <?= htmlspecialchars($_GET['error']) ?>

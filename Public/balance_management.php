@@ -21,6 +21,40 @@ $currentBalance = $balance->getBalance();
 
 // Geçmiş hareketleri al
 $balanceHistory = $balance->getBalanceHistory();
+
+// Karbon Ayak İzi Vergisi hesaplama
+$carbonTaxDetails = $balance->calculateCarbonTax();
+$totalCarbon = $carbonTaxDetails['totalCarbon'];
+$carbonTax = $carbonTaxDetails['carbonTax'];
+
+// Elektrik Faturası hesaplama
+$electricityDetails = $balance->calculateElectricityBill();
+$totalEnergy = $electricityDetails['totalEnergy'];
+$electricityBill = $electricityDetails['electricityBill'];
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (isset($_POST['payCarbonTax'])) {
+        try {
+            $message = $balance->payCarbonTax($carbonTax);
+            $_SESSION['success_message'] = $message; // Başarı mesajını sakla
+            header('Location: balance_management.php'); // Sayfayı yeniden yükle
+            exit();
+        } catch (Exception $e) {
+            echo "<div class='alert alert-danger'>{$e->getMessage()}</div>";
+        }
+    }
+
+    if (isset($_POST['payElectricityBill'])) {
+        try {
+            $message = $balance->payElectricityBill($electricityBill);
+            $_SESSION['success_message'] = $message; // Başarı mesajını sakla
+            header('Location: balance_management.php'); // Sayfayı yeniden yükle
+            exit();
+        } catch (Exception $e) {
+            echo "<div class='alert alert-danger'>{$e->getMessage()}</div>";
+        }
+    }
+}
 ?>
 
 <!DOCTYPE html>
@@ -35,7 +69,37 @@ $balanceHistory = $balance->getBalanceHistory();
 <?php $navbar->render(); ?>
 <div class="container mt-4">
     <h1>Fabrika Bakiyesi</h1>
+
+    <?php if (isset($_SESSION['success_message'])): ?>
+        <div class="alert alert-success">
+            <?= $_SESSION['success_message'] ?>
+        </div>
+        <?php unset($_SESSION['success_message']); ?>
+    <?php endif; ?>
+
     <p><strong>Mevcut Bakiye:</strong> <?= number_format($currentBalance, 2) ?> TL</p>
+
+    <div class="card mt-4">
+        <div class="card-body">
+            <h5 class="card-title">Karbon Ayak İzi Vergisi</h5>
+            <p>Toplam Karbon Ayak İzi: <strong><?= number_format($totalCarbon, 2) ?> kg CO2</strong></p>
+            <p>Ödenecek Vergi: <strong><?= number_format($carbonTax, 2) ?> TL</strong></p>
+            <form action="" method="POST">
+                <button type="submit" name="payCarbonTax" class="btn btn-danger">Vergiyi Öde</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="card mt-4">
+        <div class="card-body">
+            <h5 class="card-title">Elektrik Faturası</h5>
+            <p>Toplam Elektrik Tüketimi: <strong><?= number_format($totalEnergy, 2) ?> kWh</strong></p>
+            <p>Ödenecek Tutar: <strong><?= number_format($electricityBill, 2) ?> TL</strong></p>
+            <form action="" method="POST">
+                <button type="submit" name="payElectricityBill" class="btn btn-warning">Faturayı Öde</button>
+            </form>
+        </div>
+    </div>
 
     <h2>Bakiye Geçmişi</h2>
     <table class="table table-bordered">
@@ -50,10 +114,10 @@ $balanceHistory = $balance->getBalanceHistory();
         <tbody>
             <?php foreach ($balanceHistory as $history): ?>
                 <tr>
-                    <td><?= $history['TransactionDate'] ?></td>
-                    <td><?= ucfirst($history['TransactionType']) ?></td>
+                    <td><?= htmlspecialchars($history['TransactionDate']) ?></td>
+                    <td><?= ucfirst($history['TransactionType'] === 'tax' ? 'Vergi' : ($history['TransactionType'] === 'electricity' ? 'Elektrik Faturası' : $history['TransactionType'])) ?></td>
                     <td><?= number_format($history['Amount'], 2) ?> TL</td>
-                    <td><?= $history['Description'] ?></td>
+                    <td><?= htmlspecialchars($history['Description']) ?></td>
                 </tr>
             <?php endforeach; ?>
         </tbody>
