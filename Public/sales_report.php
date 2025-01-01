@@ -19,8 +19,12 @@ $selectedDate = $_POST['selectedDate'] ?? null;
 
 // Satış raporu verileri
 $salesData = [];
+$totalProfitLoss = 0; // Toplam kar/zarar
 if ($selectedDate) {
     $salesData = $report->getDailySales($selectedDate);
+    $totalProfitLoss = array_reduce($salesData, function ($carry, $sale) {
+        return $carry + $sale['ProfitLoss'];
+    }, 0);
 }
 
 // Satış verilerini tarih ve saat sırasına göre sıralama
@@ -53,6 +57,12 @@ usort($salesData, function ($a, $b) {
             padding: 10px;
             border-radius: 5px;
             font-weight: bold;
+        }
+        .total-profit-loss {
+            font-size: 1.5rem;
+            font-weight: bold;
+            text-align: center;
+            margin-top: 10px;
         }
     </style>
 </head>
@@ -102,6 +112,9 @@ usort($salesData, function ($a, $b) {
                         <?php endforeach; ?>
                     </tbody>
                 </table>
+                <div class="total-profit-loss <?= $totalProfitLoss >= 0 ? 'text-success' : 'text-danger' ?>">
+                    Toplam Kâr/Zarar: <?= number_format($totalProfitLoss, 2) ?> TL
+                </div>
             </div>
         </div>
     <?php endif; ?>

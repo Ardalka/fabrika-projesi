@@ -27,9 +27,10 @@ class Navbar {
 
             if ($this->userRole === 'admin') {
                 $this->menuItems['Malzeme Yönetimi'] = 'material_management.php';
-                $this->menuItems['Raporlama'] = 'report_management.php';
                 $this->menuItems['Makine Yönetimi'] = 'machine_management.php';
+                $this->menuItems['Kullanıcı Yönetimi'] = 'user_management.php';
                 $this->menuItems['Bakiye Yönetimi'] = 'balance_management.php';
+                $this->menuItems['Raporlar'] = 'report_management.php';
             }
 
             $this->menuItems['Çıkış Yap'] = 'logout.php';

@@ -12,13 +12,6 @@ class Product {
         return $this->db->fetchAll("SELECT * FROM Products");
     }
 
-    public function addProduct($name) {
-        $this->db->execute(
-            "INSERT INTO Products (ProductName) VALUES (:name)",
-            [':name' => $name]
-        );
-    }
-
     public function updateProduct($id, $name) {
         $this->db->execute(
             "UPDATE Products SET ProductName = :name WHERE ProductID = :id",
@@ -28,24 +21,10 @@ class Product {
             ]
         );
     }
-
-    public function deleteProduct($id) {
-        $this->db->execute(
-            "DELETE FROM Products WHERE ProductID = :id",
-            [':id' => $id]
-        );
+    public function getAllMaterials() {
+        return $this->db->fetchAll("SELECT * FROM Materials");
     }
-
-    public function addProductMaterial($productId, $materialId, $quantity) {
-        $this->db->execute(
-            "INSERT INTO ProductMaterials (ProductID, MaterialID, Quantity) VALUES (:product_id, :material_id, :quantity)",
-            [
-                ':product_id' => $productId,
-                ':material_id' => $materialId,
-                ':quantity' => $quantity
-            ]
-        );
-    }
+    
 
     public function getProductMaterials($productId) {
         return $this->db->fetchAll(
@@ -61,6 +40,28 @@ class Product {
         $this->db->execute(
             "DELETE FROM ProductMaterials WHERE ProductID = :product_id",
             [':product_id' => $productId]
+        );
+    }
+
+    public function addProductMaterial($productId, $materialId, $quantity) {
+        $this->db->execute(
+            "INSERT INTO ProductMaterials (ProductID, MaterialID, Quantity) VALUES (:product_id, :material_id, :quantity)",
+            [
+                ':product_id' => $productId,
+                ':material_id' => $materialId,
+                ':quantity' => $quantity
+            ]
+        );
+    }
+
+    public function updateProductMaterial($productId, $materialId, $quantity) {
+        $this->db->execute(
+            "UPDATE ProductMaterials SET Quantity = :quantity WHERE ProductID = :product_id AND MaterialID = :material_id",
+            [
+                ':quantity' => $quantity,
+                ':product_id' => $productId,
+                ':material_id' => $materialId
+            ]
         );
     }
 }
