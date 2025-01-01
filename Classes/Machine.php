@@ -76,34 +76,41 @@ class Machine {
             "SELECT MachineID, Health, MaintenanceCostPerUnit FROM Machines WHERE MachineID = :machine_id",
             [':machine_id' => $machineId]
         );
-
+    
         if (!$machine) {
             throw new Exception("Makine bulunamadı.");
         }
-
+    
         // Sağlık durumuna göre bakım maliyetini hesapla
         $healthDeficit = 100 - $machine['Health']; // Eksik sağlık miktarı
         $maintenanceCost = $healthDeficit * $machine['MaintenanceCostPerUnit'];
-
+    
         if ($healthDeficit <= 0) {
             throw new Exception("Makine zaten tam sağlık durumunda.");
         }
-
+    
         // Bakiyeyi güncelle
         $balance = new Balance();
         $balance->updateBalance(-$maintenanceCost);
         $balance->recordTransaction(
-            'maintenance',
+            'Bakım',
             $maintenanceCost,
             "Makine Bakımı: {$machineId} - Sağlık Artışı: {$healthDeficit}%"
         );
-
+    
         // Makineyi tam sağlığa geri döndür
         $this->db->execute(
             "UPDATE Machines SET Health = 100 WHERE MachineID = :machine_id",
             [':machine_id' => $machineId]
         );
-
+    
+        // Toplam çalışma süresini sıfırla
+        $this->db->execute(
+            "UPDATE MachineStats SET TotalWorkTime = 0 WHERE MachineID = :machine_id",
+            [':machine_id' => $machineId]
+        );
+    
         return "Bakım başarıyla tamamlandı. Maliyet: {$maintenanceCost} TL";
     }
+    
 }

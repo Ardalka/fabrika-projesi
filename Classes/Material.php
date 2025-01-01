@@ -26,43 +26,24 @@ class Material {
         );
     }
 
-    public function updateMaterial($id, $name, $cost, $stock) {
-        $this->db->execute(
-            "UPDATE Materials SET MaterialName = :name, CostPerUnit = :cost, Stock = :stock WHERE MaterialID = :id",
-            [
-                ':name' => $name,
-                ':cost' => $cost,
-                ':stock' => $stock,
-                ':id' => $id
-            ]
-        );
-    }
-
-    public function deleteMaterial($id) {
-        $this->db->execute(
-            "DELETE FROM Materials WHERE MaterialID = :id",
-            [':id' => $id]
-        );
-    }
-
     public function purchaseMaterial($materialId, $quantity) {
         // Malzeme bilgilerini al
         $material = $this->db->fetch("SELECT * FROM Materials WHERE MaterialID = :id", [':id' => $materialId]);
         if (!$material) {
             throw new Exception("Malzeme bulunamadı.");
         }
-
+    
         // Toplam maliyeti hesapla
         $totalCost = $material['CostPerUnit'] * $quantity;
-
+    
         // Bakiyeyi güncelle
         $this->balance->updateBalance(-$totalCost);
         $this->balance->recordTransaction(
-            'purchase', 
+            'Satın Alım', 
             -$totalCost, 
             "Satın Alım: Malzeme ID {$material['MaterialID']}, Adı: {$material['MaterialName']}, Miktar: $quantity"
         );
-
+    
         // Malzeme stoğunu güncelle
         $this->db->execute(
             "UPDATE Materials SET Stock = Stock + :quantity WHERE MaterialID = :id",
@@ -71,7 +52,7 @@ class Material {
                 ':id' => $materialId
             ]
         );
-
+    
         // Satın alım kaydı ekle
         $this->db->execute(
             "INSERT INTO Purchases (MaterialID, Quantity, TotalCost, PurchaseDate) 
@@ -82,8 +63,10 @@ class Material {
                 ':totalCost' => $totalCost
             ]
         );
-
-        return "Malzeme başarıyla satın alındı.";
+    
+        // Toplam maliyeti döndür
+        return $totalCost;
     }
+    
 }
 ?>

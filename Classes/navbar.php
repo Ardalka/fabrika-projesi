@@ -27,7 +27,7 @@ class Navbar {
 
             if ($this->userRole === 'admin') {
                 $this->menuItems['Malzeme Yönetimi'] = 'material_management.php';
-                $this->menuItems['Raporlama'] = 'report.php';
+                $this->menuItems['Raporlama'] = 'report_management.php';
                 $this->menuItems['Makine Yönetimi'] = 'machine_management.php';
                 $this->menuItems['Bakiye Yönetimi'] = 'balance_management.php';
             }
@@ -39,7 +39,7 @@ class Navbar {
     public function render() {
         echo '<nav class="navbar navbar-expand-lg navbar-dark bg-primary">';
         echo '<div class="container-fluid">';
-        echo '<a class="navbar-brand" href="#">Fabrika Yönetimi</a>';
+        echo '<a class="navbar-brand" href="#">ProdTrack</a>';
         echo '<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">';
         echo '<span class="navbar-toggler-icon"></span>';
         echo '</button>';

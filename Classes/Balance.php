@@ -25,89 +25,7 @@ class Balance {
             [':amount' => $amount]
         );
     }
-
-    public function calculateCarbonTax() {
-        // MachineStats tablosundaki toplam karbon ayak izini hesapla
-        $totalCarbon = $this->db->fetch(
-            "SELECT SUM(TotalCarbonProduced) AS TotalCarbon FROM MachineStats"
-        )['TotalCarbon'];
     
-        $taxRate = 1.0; // 1 TL/kg
-        $carbonTax = $totalCarbon * $taxRate;
-    
-        return [
-            'totalCarbon' => $totalCarbon,
-            'carbonTax' => $carbonTax
-        ];
-    }
-
-    public function payCarbonTax($carbonTax) {
-        $balance = $this->getBalance();
-    
-        if ($balance < $carbonTax) {
-            throw new Exception("Yetersiz bakiye. Vergiyi ödemek için daha fazla bakiyeye ihtiyacınız var.");
-        }
-    
-        // Bakiyeden düş
-        $this->updateBalance(-$carbonTax);
-    
-        // Bakiye geçmişine işlem kaydet
-        $this->recordTransaction(
-            'tax', 
-            $carbonTax, 
-            "Karbon Ayak İzi Vergisi Ödendi"
-        );
-    
-        // MachineStats'taki karbon birikimini sıfırla
-        $this->db->execute("UPDATE MachineStats SET TotalCarbonProduced = 0");
-    
-        return "Vergi başarıyla ödendi.";
-    }
-    
-    public function calculateElectricityBill() {
-        // MachineStats tablosundan toplam elektrik tüketimini al
-        $totalEnergyUsed = $this->db->fetch(
-            "SELECT SUM(TotalEnergyUsed) AS TotalEnergy FROM MachineStats"
-        )['TotalEnergy'];
-    
-        $electricityRate = 1.5; // 1.5 TL/kWh (örnek birim fiyat)
-        $electricityBill = $totalEnergyUsed * $electricityRate;
-    
-        return [
-            'totalEnergy' => $totalEnergyUsed,
-            'electricityBill' => $electricityBill
-        ];
-    }
-    
-    public function payElectricityBill($electricityBill) {
-        $balance = $this->getBalance();
-    
-        if ($balance < $electricityBill) {
-            throw new Exception("Yetersiz bakiye. Elektrik faturasını ödemek için daha fazla bakiyeye ihtiyacınız var.");
-        }
-    
-        // Bakiyeden düş
-        $this->updateBalance(-$electricityBill);
-    
-        // Bakiye geçmişine işlem kaydet
-        $this->recordTransaction(
-            'electricity', 
-            $electricityBill, 
-            "Elektrik Faturası Ödendi"
-        );
-    
-        // MachineStats'taki elektrik tüketimini sıfırla
-        $this->db->execute("UPDATE MachineStats SET TotalEnergyUsed = 0");
-    
-        return "Elektrik faturası başarıyla ödendi.";
-    }
-    
-
-    // Bakiyenin yetersiz olup olmadığını kontrol eder
-    public function isBalanceSufficient($amount) {
-        $currentBalance = $this->getBalance();
-        return $currentBalance >= $amount;
-    }
 
     // Bakiye hareketi
     public function recordTransaction($type, $amount, $description) {
@@ -121,5 +39,96 @@ class Balance {
             ]
         );
     }
+
+    public function calculateCarbonTax() {
+        // MachineStats tablosundaki toplam karbon ayak izini hesapla
+        $totalCarbon = $this->db->fetch(
+            "SELECT SUM(TotalCarbonProduced) AS TotalCarbon FROM MachineStats"
+        )['TotalCarbon'];
+    
+        $taxRate = 1.4; // 1 TL/kg
+        $carbonTax = $totalCarbon * $taxRate;
+    
+        return [
+            'totalCarbon' => $totalCarbon,
+            'carbonTax' => $carbonTax
+        ];
+    }
+
+    public function payCarbonTax($carbonTax) {
+        // Mevcut bakiyeyi al
+        $balance = $this->getBalance();
+    
+        // Bakiyenin yeterli olup olmadığını kontrol et
+        if ($balance < $carbonTax) {
+            throw new Exception("Yetersiz bakiye. Karbon ayak izi vergisini ödemek için daha fazla bakiyeye ihtiyacınız var.");
+        }
+    
+        // Bakiyeden karbon vergisini düş
+        $this->updateBalance(-$carbonTax);
+    
+        // Bakiye geçmişine işlem kaydet
+        $this->recordTransaction(
+            'Karbon Vergisi', // İşlem türü
+            -$carbonTax, // Negatif değer (bakiyeden düşmek için)
+            "Karbon Ayak İzi Vergisi Ödendi" // Açıklama
+        );
+    
+        // MachineStats tablosundaki toplam karbon ayak izini sıfırla
+        $this->db->execute("UPDATE MachineStats SET TotalCarbonProduced = 0");
+    
+        return "Karbon ayak izi vergisi başarıyla ödendi.";
+    }
+    
+    
+    public function calculateElectricityBill() {
+        // MachineStats tablosundan toplam elektrik tüketimini al
+        $totalEnergyUsed = $this->db->fetch(
+            "SELECT SUM(TotalEnergyUsed) AS TotalEnergy FROM MachineStats"
+        )['TotalEnergy'];
+    
+        $electricityRate = 1.4;
+        $electricityBill = $totalEnergyUsed * $electricityRate;
+    
+        return [
+            'totalEnergy' => $totalEnergyUsed,
+            'electricityBill' => $electricityBill
+        ];
+    }
+    
+    public function payElectricityBill($electricityBill) {
+        // Mevcut bakiyeyi al
+        $balance = $this->getBalance();
+    
+        // Bakiyenin yeterli olup olmadığını kontrol et
+        if ($balance < $electricityBill) {
+            throw new Exception("Yetersiz bakiye. Elektrik faturasını ödemek için daha fazla bakiyeye ihtiyacınız var.");
+        }
+    
+        // Bakiyeden elektrik faturasını düş
+        $this->updateBalance(-$electricityBill);
+    
+        // Bakiye geçmişine işlem kaydet
+        $this->recordTransaction(
+            'Elektrik Faturası',  // İşlem türü
+            -$electricityBill, // Negatif değer (bakiyeden düşmek için)
+            "Elektrik Faturası Ödendi" // Açıklama
+        );
+    
+        // MachineStats tablosundaki elektrik tüketimini sıfırla
+        $this->db->execute("UPDATE MachineStats SET TotalEnergyUsed = 0");
+    
+        return "Elektrik faturası başarıyla ödendi.";
+    }
+    
+    
+
+    // Bakiyenin yetersiz olup olmadığını kontrol eder
+    public function isBalanceSufficient($amount) {
+        $currentBalance = $this->getBalance();
+        return $currentBalance >= $amount;
+    }
+
+
 }
 ?>

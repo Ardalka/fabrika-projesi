@@ -40,10 +40,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['maintenance'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Makine Yönetimi</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .table thead th {
+            background-color: #cfe2ff;
+            color: #000;
+            text-align: center;
+        }
+        .table tbody td {
+            text-align: center;
+            vertical-align: middle;
+        }
+        .alert {
+            text-align: center;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5rem;
+            color: #007bff;
+        }
+    </style>
 </head>
 <body>
 <?php $navbar->render(); ?>
-<div class="container mt-4">
+<div class="container mt-5">
     <h1>Makine Yönetimi</h1>
 
     <?php if (isset($_SESSION['successMessage'])): ?>
@@ -60,46 +80,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['maintenance'])) {
         <?php unset($_SESSION['errorMessage']); ?>
     <?php endif; ?>
 
-    <table class="table table-bordered">
-        <thead>
-            <tr>
-                <th>Makine Adı</th>
-                <th>Toplam Çalışma Süresi (saat)</th>
-                <th>Toplam Elektrik Tüketimi (kWh)</th>
-                <th>Toplam Karbon Ayak İzi (kg CO2)</th>
-                <th>Sağlık Durumu (%)</th>
-                <th>Bakım Maliyeti (TL)</th>
-                <th>İşlemler</th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php foreach ($machines as $mach): ?>
-                <?php 
-                    $stats = $machineStats[$mach['MachineID']] ?? null;
-                    $healthDeficit = 100 - $mach['Health'];
-                    $maintenanceCost = $healthDeficit * $mach['MaintenanceCostPerUnit'];
-                ?>
+    <div class="table-responsive">
+        <table class="table table-striped table-bordered align-middle">
+            <thead>
                 <tr>
-                    <td><?= htmlspecialchars($mach['MachineName']) ?></td>
-                    <td><?= $stats['TotalWorkTime'] ?? 0 ?></td>
-                    <td><?= $stats['TotalEnergyUsed'] ?? 0 ?></td>
-                    <td><?= $stats['TotalCarbonProduced'] ?? 0 ?></td>
-                    <td><?= htmlspecialchars($mach['Health']) ?>%</td>
-                    <td><?= $mach['Health'] < 100 ? number_format($maintenanceCost, 2) : '-' ?></td>
-                    <td>
-                        <?php if ($mach['Health'] < 100): ?>
-                            <form method="POST">
-                                <input type="hidden" name="machineId" value="<?= $mach['MachineID'] ?>">
-                                <button type="submit" name="maintenance" class="btn btn-warning">Bakım Yap</button>
-                            </form>
-                        <?php else: ?>
-                            <button class="btn btn-success" disabled>Sağlık Tam</button>
-                        <?php endif; ?>
-                    </td>
+                    <th>Makine Adı</th>
+                    <th>Toplam Çalışma Süresi (saat)</th>
+                    <th>Toplam Elektrik Tüketimi (kWh)</th>
+                    <th>Toplam Karbon Ayak İzi (kg CO2)</th>
+                    <th>Sağlık Durumu (%)</th>
+                    <th>Bakım Maliyeti (TL)</th>
+                    <th>İşlemler</th>
                 </tr>
-            <?php endforeach; ?>
-        </tbody>
-    </table>
+            </thead>
+            <tbody>
+                <?php foreach ($machines as $mach): ?>
+                    <?php 
+                        $stats = $machineStats[$mach['MachineID']] ?? null;
+                        $healthDeficit = 100 - $mach['Health'];
+                        $maintenanceCost = $healthDeficit * $mach['MaintenanceCostPerUnit'];
+                    ?>
+                    <tr>
+                        <td><?= htmlspecialchars($mach['MachineName']) ?></td>
+                        <td><?= $stats['TotalWorkTime'] ?? 0 ?></td>
+                        <td><?= $stats['TotalEnergyUsed'] ?? 0 ?></td>
+                        <td><?= $stats['TotalCarbonProduced'] ?? 0 ?></td>
+                        <td>
+                            <div class="progress" style="height: 25px;">
+                                <div class="progress-bar <?= $mach['Health'] > 50 ? 'bg-success' : ($mach['Health'] > 20 ? 'bg-warning' : 'bg-danger') ?>"
+                                    role="progressbar" style="width: <?= $mach['Health'] ?>%;"
+                                    aria-valuenow="<?= $mach['Health'] ?>" aria-valuemin="0" aria-valuemax="100">
+                                    <?= htmlspecialchars($mach['Health']) ?>%
+                                </div>
+                            </div>
+                        </td>
+                        <td><?= $mach['Health'] < 100 ? number_format($maintenanceCost, 2) : '-' ?></td>
+                        <td>
+                            <?php if ($mach['Health'] < 100): ?>
+                                <form method="POST">
+                                    <input type="hidden" name="machineId" value="<?= $mach['MachineID'] ?>">
+                                    <button type="submit" name="maintenance" class="btn btn-warning">Bakım Yap</button>
+                                </form>
+                            <?php else: ?>
+                                <button class="btn btn-success" disabled>Sağlık Tam</button>
+                            <?php endif; ?>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
 </body>

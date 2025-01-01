@@ -34,6 +34,11 @@ $electricityBill = $electricityDetails['electricityBill'];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['payCarbonTax'])) {
+        if ($carbonTax <= 0) {
+            $_SESSION['error_message'] = "Ödenecek karbon ayak izi vergisi bulunmamaktadır.";
+            header('Location: balance_management.php');
+            exit();
+        }
         try {
             $message = $balance->payCarbonTax($carbonTax);
             $_SESSION['success_message'] = $message; // Başarı mesajını sakla
@@ -45,6 +50,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if (isset($_POST['payElectricityBill'])) {
+        if ($electricityBill <= 0) {
+            $_SESSION['error_message'] = "Ödenecek elektrik faturası bulunmamaktadır.";
+            header('Location: balance_management.php');
+            exit();
+        }
         try {
             $message = $balance->payElectricityBill($electricityBill);
             $_SESSION['success_message'] = $message; // Başarı mesajını sakla
@@ -64,6 +74,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bakiye Yönetimi</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #007bff;
+        }
+        .card {
+            border: 1px solid #dee2e6;
+            border-radius: 0.25rem;
+        }
+        .table thead th {
+            background-color: #cfe2ff;
+            color: #000;
+        }
+        .table tbody td {
+            text-align: center;
+        }
+        .alert {
+            text-align: center;
+            margin-top: 20px;
+        }
+    </style>
 </head>
 <body>
 <?php $navbar->render(); ?>
@@ -72,37 +107,54 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <?php if (isset($_SESSION['success_message'])): ?>
         <div class="alert alert-success">
-            <?= $_SESSION['success_message'] ?>
+            <?= htmlspecialchars($_SESSION['success_message']) ?>
         </div>
         <?php unset($_SESSION['success_message']); ?>
     <?php endif; ?>
 
-    <p><strong>Mevcut Bakiye:</strong> <?= number_format($currentBalance, 2) ?> TL</p>
+    <?php if (isset($_SESSION['error_message'])): ?>
+        <div class="alert alert-danger">
+            <?= htmlspecialchars($_SESSION['error_message']) ?>
+        </div>
+        <?php unset($_SESSION['error_message']); ?>
+    <?php endif; ?>
 
-    <div class="card mt-4">
-        <div class="card-body">
-            <h5 class="card-title">Karbon Ayak İzi Vergisi</h5>
-            <p>Toplam Karbon Ayak İzi: <strong><?= number_format($totalCarbon, 2) ?> kg CO2</strong></p>
-            <p>Ödenecek Vergi: <strong><?= number_format($carbonTax, 2) ?> TL</strong></p>
-            <form action="" method="POST">
-                <button type="submit" name="payCarbonTax" class="btn btn-danger">Vergiyi Öde</button>
-            </form>
+    <div class="card mb-4">
+        <div class="card-body text-center">
+            <h3>Mevcut Bakiye</h3>
+            <p class="display-5"><?= number_format($currentBalance, 2) ?> TL</p>
         </div>
     </div>
 
-    <div class="card mt-4">
-        <div class="card-body">
-            <h5 class="card-title">Elektrik Faturası</h5>
-            <p>Toplam Elektrik Tüketimi: <strong><?= number_format($totalEnergy, 2) ?> kWh</strong></p>
-            <p>Ödenecek Tutar: <strong><?= number_format($electricityBill, 2) ?> TL</strong></p>
-            <form action="" method="POST">
-                <button type="submit" name="payElectricityBill" class="btn btn-warning">Faturayı Öde</button>
-            </form>
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title text-danger">Karbon Ayak İzi Vergisi</h5>
+                    <p>Toplam Karbon Ayak İzi: <strong><?= number_format($totalCarbon, 2) ?> kg CO2</strong></p>
+                    <p>Ödenecek Vergi: <strong><?= number_format($carbonTax, 2) ?> TL</strong></p>
+                    <form action="" method="POST">
+                        <button type="submit" name="payCarbonTax" class="btn btn-danger btn-block">Vergiyi Öde</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title text-warning">Elektrik Faturası</h5>
+                    <p>Toplam Elektrik Tüketimi: <strong><?= number_format($totalEnergy, 2) ?> kWh</strong></p>
+                    <p>Ödenecek Tutar: <strong><?= number_format($electricityBill, 2) ?> TL</strong></p>
+                    <form action="" method="POST">
+                        <button type="submit" name="payElectricityBill" class="btn btn-warning btn-block">Faturayı Öde</button>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
 
-    <h2>Bakiye Geçmişi</h2>
-    <table class="table table-bordered">
+    <h2 class="mt-5 text-center">Bakiye Geçmişi</h2>
+    <table class="table table-bordered mt-3">
         <thead>
             <tr>
                 <th>Tarih</th>

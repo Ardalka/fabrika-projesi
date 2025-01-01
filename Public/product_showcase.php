@@ -37,7 +37,7 @@ $productMaterials = $db->fetchAll("
 <body>
 <?php $navbar->render(); ?>
 <div class="container mt-4">
-    <h1 class="text-center">Parça Tanıtımı</h1>
+    <h1 class="text-center">Parçalar</h1>
     <div class="row">
         <?php foreach ($products as $product): ?>
             <div class="col-md-4 mb-4">

@@ -80,15 +80,15 @@ class SalesManager {
         // Bakiye güncelle ve işlem kaydet
         $this->balance->updateBalance($salePrice);
         $this->balance->recordTransaction(
-            'sale', 
+            'Satış', 
             $salePrice, 
             "Satış: Ürün ID {$product['ProductID']}, Adı: {$product['ProductName']}, Miktar: $quantity, Makine: {$machine['MachineName']}"
         );
     
         // Satışı kaydet
         $this->db->execute(
-            "INSERT INTO Sales (UserID, ProductID, MachineID, Quantity, ProductionTime, EnergyUsed, CarbonProduced) 
-            VALUES (:user_id, :product_id, :machine_id, :quantity, :production_time, :energy_used, :carbon_produced)",
+            "INSERT INTO Sales (UserID, ProductID, MachineID, Quantity, ProductionTime, EnergyUsed, CarbonProduced, TotalPrice) 
+            VALUES (:user_id, :product_id, :machine_id, :quantity, :production_time, :energy_used, :carbon_produced, :total_price)",
             [
                 ':user_id' => $userId,
                 ':product_id' => $productId,
@@ -96,12 +96,14 @@ class SalesManager {
                 ':quantity' => $quantity,
                 ':production_time' => $productionTime,
                 ':energy_used' => $energyUsed,
-                ':carbon_produced' => $carbonProduced
+                ':carbon_produced' => $carbonProduced,
+                ':total_price' => $salePrice
             ]
         );
     
         return "Satış başarıyla kaydedildi.";
     }
+
     
 }
 ?>
