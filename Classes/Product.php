@@ -7,11 +7,13 @@ class Product {
     public function __construct() {
         $this->db = new DB();
     }
-
+    
+    // Parça Verilerini Alma Fonksiyonu
     public function getAllProducts() {
         return $this->db->fetchAll("SELECT * FROM Products");
     }
 
+    // Parça Güncelleme Fonksiyonu
     public function updateProduct($id, $name) {
         $this->db->execute(
             "UPDATE Products SET ProductName = :name WHERE ProductID = :id",
@@ -21,11 +23,13 @@ class Product {
             ]
         );
     }
+    
+    // Malzeme Verilerini Alma Fonksiyonu
     public function getAllMaterials() {
         return $this->db->fetchAll("SELECT * FROM Materials");
     }
     
-
+    // Parça Malzeme İlişkisi ile Verileri Alma Fonksiyonu
     public function getProductMaterials($productId) {
         return $this->db->fetchAll(
             "SELECT pm.MaterialID, m.MaterialName, pm.Quantity 

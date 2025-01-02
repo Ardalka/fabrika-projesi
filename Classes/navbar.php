@@ -45,7 +45,7 @@ class Navbar {
         echo '<span class="navbar-toggler-icon"></span>';
         echo '</button>';
         echo '<div class="collapse navbar-collapse" id="navbarNav">';
-        echo '<ul class="navbar-nav">';
+        echo '<ul class="navbar-nav me-auto">';
 
         foreach ($this->menuItems as $name => $link) {
             echo '<li class="nav-item">';
@@ -53,6 +53,11 @@ class Navbar {
             echo '</li>';
         }
 
+        echo '</ul>';
+        echo '<ul class="navbar-nav">';
+        echo '<li class="nav-item">';
+        echo '<a class="nav-link" href="aboutus.php">Hakkımızda</a>';
+        echo '</li>';
         echo '</ul>';
         echo '</div>';
         echo '</div>';

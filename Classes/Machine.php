@@ -9,10 +9,12 @@ class Machine {
         $this->db = new DB();
     }
 
+    // Tüm Makinelerin Verilerini Alma
     public function getAllMachines() {
         return $this->db->fetchAll("SELECT * FROM Machines");
     }
 
+    // Karbon Ayak İzi Hesaplama Fonksiyonu
     public function calculateCarbonFootprint($machineId, $baseCarbonFootprint) {
         $machine = $this->getMachineById($machineId);
         if (!$machine) {
@@ -27,7 +29,7 @@ class Machine {
         return $baseCarbonFootprint * (100 / $effectiveHealth);
     }
     
-
+    // Id'sine Göre Makine Verisini Alma
     public function getMachineById($machineId) {
         return $this->db->fetch(
             "SELECT * FROM Machines WHERE MachineID = :machine_id",
@@ -35,6 +37,7 @@ class Machine {
         );
     }
 
+    // Makine Hareketlerinin Verilerini Alma
     public function getMachineStats($machineId) {
         return $this->db->fetch(
             "SELECT * FROM MachineStats WHERE MachineID = :machineId",
@@ -42,6 +45,7 @@ class Machine {
         );
     }
 
+    // Makine Hareketlerine Veri Girişi Fonksiyonu
     public function logMachineStats($machineId, $workTime, $energyUsed, $carbonProduced) {
         $this->db->execute(
             "UPDATE MachineStats SET 
@@ -58,6 +62,7 @@ class Machine {
         );
     }
 
+    // Makine Sağlığını Güncelleme Fonksiyonu
     public function updateMachineHealth($machineId, $usageHours) {
         $healthReduction = $usageHours * 0.5; // Örnek: Saat başına %0.5 azalma
 
@@ -70,6 +75,7 @@ class Machine {
         );
     }
 
+    // Makine Bakımını Yapma Fonksiyonu
     public function performMaintenance($machineId) {
         // Makine bilgilerini al
         $machine = $this->db->fetch(

@@ -11,21 +11,12 @@ class Material {
         $this->balance = new Balance();
     }
 
+    // Tüm Materyal Verilerini Alma
     public function getAllMaterials() {
         return $this->db->fetchAll("SELECT * FROM Materials");
     }
 
-    public function addMaterial($name, $cost, $stock) {
-        $this->db->execute(
-            "INSERT INTO Materials (MaterialName, CostPerUnit, Stock) VALUES (:name, :cost, :stock)",
-            [
-                ':name' => $name,
-                ':cost' => $cost,
-                ':stock' => $stock
-            ]
-        );
-    }
-
+    // Materyal Stok Satın Alma Fonksiyonu
     public function purchaseMaterial($materialId, $quantity) {
         // Malzeme bilgilerini al
         $material = $this->db->fetch("SELECT * FROM Materials WHERE MaterialID = :id", [':id' => $materialId]);
