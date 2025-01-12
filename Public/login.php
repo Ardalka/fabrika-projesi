@@ -1,3 +1,11 @@
+<?php
+session_start();
+if (isset($_SESSION['user_id'])) {
+    header('Location: index.php'); // Kullanıcı giriş yapmışsa yönlendir
+    exit();
+}
+
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
