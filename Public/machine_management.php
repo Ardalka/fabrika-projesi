@@ -1,6 +1,9 @@
 <?php
 require_once '../Classes/Machine.php';
 require_once '../Classes/Navbar.php';
+require_once '../Core/DB.php';
+require_once '../Classes/Balance.php';
+
 session_start();
 
 // Admin yetkisi kontrolü
@@ -10,25 +13,30 @@ if ($userRole !== 'admin') {
     exit();
 }
 
-// Navbar ve Machine sınıfını oluştur
 $navbar = new Navbar($userRole);
-$machine = new Machine();
-$machines = $machine->getAllMachines();
+$db = new DB();
+$balance = new Balance();
 
-$machineStats = [];
-foreach ($machines as $mach) {
-    $machineStats[$mach['MachineID']] = $machine->getMachineStats($mach['MachineID']);
-}
+// Manuel olarak tanımlanan makineler
+$machineObjects = [
+    new Machine(1, $db, $balance), // Yavaş Makine
+    new Machine(2, $db, $balance)  // Hızlı Makine
+];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['maintenance'])) {
     $machineId = $_POST['machineId'];
     try {
-        $result = $machine->performMaintenance($machineId);
-        $_SESSION['successMessage'] = $result; // Mesajı oturumda sakla
+        foreach ($machineObjects as $machine) {
+            if ($machine->getId() == $machineId) {
+                $result = $machine->performMaintenance();
+                $_SESSION['successMessage'] = $result;
+                break;
+            }
+        }
     } catch (Exception $e) {
-        $_SESSION['errorMessage'] = $e->getMessage(); // Hata mesajını oturumda sakla
+        $_SESSION['errorMessage'] = $e->getMessage();
     }
-    header('Location: machine_management.php'); // Sayfayı yenile
+    header('Location: machine_management.php');
     exit();
 }
 ?>
@@ -40,49 +48,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['maintenance'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Makine Yönetimi</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        .table thead th {
-            background-color: #cfe2ff;
-            color: #000;
-            text-align: center;
-        }
-        .table tbody td {
-            text-align: center;
-            vertical-align: middle;
-        }
-        .alert {
-            text-align: center;
-        }
-        h1 {
-            text-align: center;
-            margin-bottom: 30px;
-            font-size: 2.5rem;
-            color: #007bff;
-        }
-    </style>
 </head>
 <body>
 <?php $navbar->render(); ?>
 <div class="container mt-5">
-    <h1>Makine Yönetimi</h1>
+    <h1 class="text-center text-primary mb-4">Makine Yönetimi</h1>
 
     <?php if (isset($_SESSION['successMessage'])): ?>
-        <div class="alert alert-success">
-            <?= $_SESSION['successMessage'] ?>
-        </div>
+        <div class="alert alert-success text-center"><?= $_SESSION['successMessage'] ?></div>
         <?php unset($_SESSION['successMessage']); ?>
     <?php endif; ?>
 
     <?php if (isset($_SESSION['errorMessage'])): ?>
-        <div class="alert alert-danger">
-            <?= $_SESSION['errorMessage'] ?>
-        </div>
+        <div class="alert alert-danger text-center"><?= $_SESSION['errorMessage'] ?></div>
         <?php unset($_SESSION['errorMessage']); ?>
     <?php endif; ?>
 
     <div class="table-responsive">
-        <table class="table table-striped table-bordered align-middle">
-            <thead>
+        <table class="table table-bordered table-striped table-hover">
+            <thead class="table-primary">
                 <tr>
                     <th>Makine Adı</th>
                     <th>Toplam Çalışma Süresi (saat)</th>
@@ -94,31 +78,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['maintenance'])) {
                 </tr>
             </thead>
             <tbody>
-                <?php foreach ($machines as $mach): ?>
+                <?php foreach ($machineObjects as $machine): ?>
                     <?php 
-                        $stats = $machineStats[$mach['MachineID']] ?? null;
-                        $healthDeficit = 100 - $mach['Health'];
-                        $maintenanceCost = $healthDeficit * $mach['MaintenanceCostPerUnit'];
+                        $stats = $machine->getMachineStats();
+                        $maintenanceCost = (100 - $machine->getHealth()) * $machine->getMaintenanceCostPerUnit();
                     ?>
                     <tr>
-                        <td><?= htmlspecialchars($mach['MachineName']) ?></td>
-                        <td><?= $stats['TotalWorkTime'] ?? 0 ?></td>
-                        <td><?= $stats['TotalEnergyUsed'] ?? 0 ?></td>
-                        <td><?= $stats['TotalCarbonProduced'] ?? 0 ?></td>
+                        <td><?= htmlspecialchars($machine->getName()) ?></td>
+                        <td><?= number_format($stats['TotalWorkTime'], 2) ?> saat</td>
+                        <td><?= number_format($stats['TotalEnergyUsed'], 2) ?> kWh</td>
+                        <td><?= number_format($stats['TotalCarbonProduced'], 2) ?> kg CO2</td>
                         <td>
                             <div class="progress" style="height: 25px;">
-                                <div class="progress-bar <?= $mach['Health'] > 50 ? 'bg-success' : ($mach['Health'] > 20 ? 'bg-warning' : 'bg-danger') ?>"
-                                    role="progressbar" style="width: <?= $mach['Health'] ?>%;"
-                                    aria-valuenow="<?= $mach['Health'] ?>" aria-valuemin="0" aria-valuemax="100">
-                                    <?= htmlspecialchars($mach['Health']) ?>%
+                                <div class="progress-bar <?= $machine->getHealth() > 50 ? 'bg-success' : ($machine->getHealth() > 20 ? 'bg-warning' : 'bg-danger') ?>"
+                                    role="progressbar" style="width: <?= $machine->getHealth() ?>%;"
+                                    aria-valuenow="<?= $machine->getHealth() ?>" aria-valuemin="0" aria-valuemax="100">
+                                    <?= htmlspecialchars($machine->getHealth()) ?>%
                                 </div>
                             </div>
                         </td>
-                        <td><?= $mach['Health'] < 100 ? number_format($maintenanceCost, 2) : '-' ?></td>
+                        <td><?= $machine->getHealth() < 100 ? number_format($maintenanceCost, 2) : '-' ?></td>
                         <td>
-                            <?php if ($mach['Health'] < 100): ?>
+                            <?php if ($machine->getHealth() < 100): ?>
                                 <form method="POST">
-                                    <input type="hidden" name="machineId" value="<?= $mach['MachineID'] ?>">
+                                    <input type="hidden" name="machineId" value="<?= $machine->getId() ?>">
                                     <button type="submit" name="maintenance" class="btn btn-warning">Bakım Yap</button>
                                 </form>
                             <?php else: ?>

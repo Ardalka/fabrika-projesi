@@ -3,61 +3,105 @@ require_once '../Core/DB.php';
 require_once '../Classes/Balance.php';
 
 class Material {
+    private $id;
+    private $name;
+    private $costPerUnit;
+    private $stock;
     private $db;
     private $balance;
 
-    public function __construct() {
-        $this->db = new DB();
-        $this->balance = new Balance();
-    }
+    public function __construct($id, DB $db, Balance $balance) {
+        $this->db = $db;
+        $this->balance = $balance;
+        
+        // Veritabanından malzeme bilgilerini al
+        $material = $this->db->fetch("SELECT * FROM Materials WHERE MaterialID = :id", [':id' => $id]);
 
-    // Tüm Materyal Verilerini Alma
-    public function getAllMaterials() {
-        return $this->db->fetchAll("SELECT * FROM Materials");
-    }
-
-    // Materyal Stok Satın Alma Fonksiyonu
-    public function purchaseMaterial($materialId, $quantity) {
-        // Malzeme bilgilerini al
-        $material = $this->db->fetch("SELECT * FROM Materials WHERE MaterialID = :id", [':id' => $materialId]);
         if (!$material) {
             throw new Exception("Malzeme bulunamadı.");
         }
+
+        $this->id = $material['MaterialID'];
+        $this->name = $material['MaterialName'];
+        $this->costPerUnit = $material['CostPerUnit'];
+        $this->stock = $material['Stock'];
+    }
+
+    public function getId() {
+        return $this->id;
+    }
+
+    public function getName() {
+        return $this->name;
+    }
+
+    public function getCostPerUnit() {
+        return $this->costPerUnit;
+    }
+
+    public function getStock() {
+        return $this->stock;
+    }
+
     
-        // Toplam maliyeti hesapla
-        $totalCost = $material['CostPerUnit'] * $quantity;
-    
-        // Bakiyeyi güncelle
+    public function increaseStock($quantity) {
+        if ($quantity <= 0) {
+            throw new Exception("Geçersiz stok artırma miktarı.");
+        }
+        
+        $this->stock += $quantity;
+        $this->updateStockInDB();
+    }
+
+    public function reduceStock($quantity) {
+        if ($quantity <= 0) {
+            throw new Exception("Geçersiz stok azaltma miktarı.");
+        }
+        
+        if ($this->stock < $quantity) {
+            throw new Exception("Yetersiz stok: {$this->name} (ID: {$this->id}).");
+        }
+        
+        $this->stock -= $quantity;
+        $this->updateStockInDB();
+    }
+
+    private function updateStockInDB() {
+        $this->db->execute("UPDATE Materials SET Stock = :stock WHERE MaterialID = :id", 
+            [':stock' => $this->stock, ':id' => $this->id]);
+    }
+
+    public function purchaseMaterial($quantity) {
+        if ($quantity <= 0) {
+            throw new Exception("Geçersiz satın alma miktarı.");
+        }
+        
+        $totalCost = $this->costPerUnit * $quantity;
+        
+        if (!$this->balance->isBalanceSufficient($totalCost)) {
+            throw new Exception("Yetersiz bakiye.");
+        }
+        
         $this->balance->updateBalance(-$totalCost);
         $this->balance->recordTransaction(
             'Satın Alım', 
             -$totalCost, 
-            "Satın Alım: Malzeme ID {$material['MaterialID']}, Adı: {$material['MaterialName']}, Miktar: $quantity"
+            "Satın Alım: Malzeme ID {$this->id}, Adı: {$this->name}, Miktar: $quantity"
         );
-    
-        // Malzeme stoğunu güncelle
-        $this->db->execute(
-            "UPDATE Materials SET Stock = Stock + :quantity WHERE MaterialID = :id",
-            [
-                ':quantity' => $quantity,
-                ':id' => $materialId
-            ]
-        );
-    
-        // Satın alım kaydı ekle
+
+        $this->increaseStock($quantity);
+        
         $this->db->execute(
             "INSERT INTO Purchases (MaterialID, Quantity, TotalCost, PurchaseDate) 
             VALUES (:materialId, :quantity, :totalCost, NOW())",
             [
-                ':materialId' => $materialId,
+                ':materialId' => $this->id,
                 ':quantity' => $quantity,
                 ':totalCost' => $totalCost
             ]
         );
-    
-        // Toplam maliyeti döndür
+
         return $totalCost;
     }
-    
 }
 ?>

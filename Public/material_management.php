@@ -2,6 +2,7 @@
 require_once '../Classes/Material.php';
 require_once '../Core/DB.php';
 require_once '../Classes/Navbar.php';
+require_once '../Classes/Balance.php';
 
 session_start();
 
@@ -13,25 +14,33 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
     exit();
 }
 
-$material = new Material();
-$materials = $material->getAllMaterials();
+$db = new DB();
+$balance = new Balance();
+
+// Manuel olarak tanımlanmış materyal nesneleri
+$materialObjects = [
+    new Material(1, $db, $balance), // Çelik
+    new Material(2, $db, $balance), // Alüminyum
+    new Material(3, $db, $balance), // Bakır
+    new Material(4, $db, $balance), // Plastik
+    new Material(5, $db, $balance)  // Cam
+];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     try {
-        if (isset($_POST['add'])) {
-            $material->addMaterial($_POST['name'], $_POST['cost'], $_POST['stock']);
-        } elseif (isset($_POST['update'])) {
-            $material->updateMaterial($_POST['id'], $_POST['name'], $_POST['cost'], $_POST['stock']);
-        } elseif (isset($_POST['addStock'])) {
-            $quantity = $_POST['quantity'];
+        if (isset($_POST['addStock'])) {
             $materialId = $_POST['id'];
-            $totalCost = $material->purchaseMaterial($materialId, $quantity);
-
-            // Başarı mesajını oturum değişkenine kaydet
-            $_SESSION['successMessage'] = "Stok başarıyla eklendi. Harcanan toplam tutar: " . number_format($totalCost, 2) . " TL.";
+            $quantity = $_POST['quantity'];
+            
+            foreach ($materialObjects as $material) {
+                if ($material->getId() == $materialId) {
+                    $totalCost = $material->purchaseMaterial($quantity);
+                    $_SESSION['successMessage'] = "Stok başarıyla eklendi. Harcanan toplam tutar: " . number_format($totalCost, 2) . " TL.";
+                    break;
+                }
+            }
         }
     } catch (Exception $e) {
-        // Hata mesajını oturum değişkenine kaydet
         $_SESSION['errorMessage'] = $e->getMessage();
     }
 
@@ -39,9 +48,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     exit();
 }
 
-// Oturumdan mesajları al ve sıfırla
-$successMessage = isset($_SESSION['successMessage']) ? $_SESSION['successMessage'] : null;
-$errorMessage = isset($_SESSION['errorMessage']) ? $_SESSION['errorMessage'] : null;
+$successMessage = $_SESSION['successMessage'] ?? null;
+$errorMessage = $_SESSION['errorMessage'] ?? null;
 unset($_SESSION['successMessage'], $_SESSION['errorMessage']);
 ?>
 
@@ -58,7 +66,6 @@ unset($_SESSION['successMessage'], $_SESSION['errorMessage']);
 <div class="container mt-5">
     <h1 class="text-center text-primary mb-4">Malzeme Yönetimi</h1>
 
-    <!-- Başarı ve Hata Mesajları -->
     <?php if ($successMessage): ?>
         <div class="alert alert-success text-center"><?= htmlspecialchars($successMessage) ?></div>
     <?php elseif ($errorMessage): ?>
@@ -77,15 +84,15 @@ unset($_SESSION['successMessage'], $_SESSION['errorMessage']);
                 </tr>
             </thead>
             <tbody>
-                <?php foreach ($materials as $mat): ?>
+                <?php foreach ($materialObjects as $material): ?>
                     <tr>
-                        <td><?= htmlspecialchars($mat['MaterialID']) ?></td>
-                        <td><?= htmlspecialchars($mat['MaterialName']) ?></td>
-                        <td><?= number_format($mat['CostPerUnit'], 2) ?></td>
-                        <td><?= htmlspecialchars($mat['Stock']) ?></td>
+                        <td><?= htmlspecialchars($material->getId()) ?></td>
+                        <td><?= htmlspecialchars($material->getName()) ?></td>
+                        <td><?= number_format($material->getCostPerUnit(), 2) ?></td>
+                        <td><?= htmlspecialchars($material->getStock()) ?></td>
                         <td>
                             <form action="" method="POST" class="d-inline">
-                                <input type="hidden" name="id" value="<?= $mat['MaterialID'] ?>">
+                                <input type="hidden" name="id" value="<?= $material->getId() ?>">
                                 <div class="input-group">
                                     <input type="number" name="quantity" class="form-control form-control-sm" style="width: 100px;" min="1" placeholder="Miktar" required>
                                     <button type="submit" name="addStock" class="btn btn-success btn-sm">Stok Ekle</button>

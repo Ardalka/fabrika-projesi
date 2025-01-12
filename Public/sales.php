@@ -4,6 +4,8 @@ require_once '../Classes/Machine.php';
 require_once '../Classes/SalesManager.php';
 require_once '../Core/DB.php';
 require_once '../Classes/Navbar.php';
+require_once '../Classes/Balance.php';
+
 session_start();
 
 $userRole = isset($_SESSION['role']) ? $_SESSION['role'] : 'user';
@@ -14,12 +16,26 @@ if (!isset($_SESSION['user_id'])) {
     exit();
 }
 
-$product = new Product();
-$machine = new Machine();
-$salesManager = new SalesManager();
+$db = new DB();
+$balance = new Balance($db);
+$salesManager = new SalesManager($db, $balance);
 
-$products = $product->getAllProducts();
-$machines = $machine->getAllMachines();
+// Manuel olarak tanımlanan ürünler ve makineler
+$products = [
+    new Product(1, $db), // Kaput
+    new Product(2, $db), // Ayna
+    new Product(3, $db),  // Direksiyon
+    new Product(4, $db), // Lastik
+    new Product(5, $db), // Far
+    new Product(6, $db), // Kapı
+    new Product(7, $db), // Tavan
+    new Product(8, $db)  // Koltuk
+];
+
+$machines = [
+    new Machine(1, $db, $balance), // Yavaş Makine
+    new Machine(2, $db, $balance)  // Hızlı Makine
+];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $productId = $_POST['product'];
@@ -27,8 +43,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $quantity = $_POST['quantity'];
 
     try {
+        // Seçilen ürün ve makineyi bul
+        $selectedProduct = null;
+        $selectedMachine = null;
+
+        foreach ($products as $product) {
+            if ($product->getId() == $productId) {
+                $selectedProduct = $product;
+                break;
+            }
+        }
+
+        foreach ($machines as $machine) {
+            if ($machine->getId() == $machineId) {
+                $selectedMachine = $machine;
+                break;
+            }
+        }
+
+        if (!$selectedProduct || !$selectedMachine) {
+            throw new Exception("Seçilen ürün veya makine bulunamadı.");
+        }
+
         // Satışı kaydet
-        $salesManager->recordSale($_SESSION['user_id'], $productId, $machineId, $quantity);
+        $salesManager->recordSale($_SESSION['user_id'], $selectedProduct, $selectedMachine, $quantity);
         $successMessage = "Sipariş verildi.";
     } catch (Exception $e) {
         $errorMessage = $e->getMessage();
@@ -61,8 +99,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="mb-3">
                     <label for="product" class="form-label">Ürün Seçin</label>
                     <select id="product" name="product" class="form-select" required>
-                        <?php foreach ($products as $prod): ?>
-                            <option value="<?= $prod['ProductID'] ?>"><?= htmlspecialchars($prod['ProductName']) ?></option>
+                        <?php foreach ($products as $product): ?>
+                            <option value="<?= $product->getId() ?>"><?= htmlspecialchars($product->getName()) ?></option>
                         <?php endforeach; ?>
                     </select>
                 </div>
@@ -70,9 +108,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="mb-3">
                     <label for="machine" class="form-label">Makine Seçin</label>
                     <select id="machine" name="machine" class="form-select" required>
-                        <?php foreach ($machines as $mach): ?>
-                            <option value="<?= $mach['MachineID'] ?>">
-                                <?= htmlspecialchars($mach['MachineName']) ?> - Üretim Süresi: <?= htmlspecialchars($mach['ProductionRate']) ?> saat
+                        <?php foreach ($machines as $machine): ?>
+                            <option value="<?= $machine->getId() ?>">
+                                <?= htmlspecialchars($machine->getName()) ?> - Üretim Süresi: <?= htmlspecialchars($machine->getProductionRate()) ?> saat
                             </option>
                         <?php endforeach; ?>
                     </select>

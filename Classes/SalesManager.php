@@ -2,87 +2,68 @@
 require_once '../Core/DB.php';
 require_once '../Classes/Balance.php';
 require_once '../Classes/Machine.php';
+require_once '../Classes/Product.php';
 
 class SalesManager {
     private $db;
     private $balance;
 
-    public function __construct() {
-        $this->db = new DB();
-        $this->balance = new Balance();
+    public function __construct(DB $db, Balance $balance) {
+        $this->db = $db;
+        $this->balance = $balance;
     }
 
-    public function recordSale($userId, $productId, $machineId, $quantity) {
-        // Ürün bilgilerini al
-        $product = $this->db->fetch("SELECT * FROM Products WHERE ProductID = :id", [':id' => $productId]);
-        if (!$product) {
-            throw new Exception("Ürün bulunamadı.");
-        }
-    
-        // Makine bilgilerini al
-        $machine = $this->db->fetch("SELECT * FROM Machines WHERE MachineID = :id", [':id' => $machineId]);
-        if (!$machine) {
-            throw new Exception("Makine bulunamadı.");
-        }
-    
+    public function recordSale($userId, Product $product, Machine $machine, $quantity) {
         // Ürün-Malzeme ilişkilerini al
-        $productMaterials = $this->db->fetchAll(
-            "SELECT pm.MaterialID, pm.Quantity, m.Stock, m.CostPerUnit 
-            FROM ProductMaterials pm
-            JOIN Materials m ON pm.MaterialID = m.MaterialID
-            WHERE pm.ProductID = :productId",
-            [':productId' => $productId]
-        );
+        $productMaterials = $product->getMaterials();
     
-        if (!$productMaterials) {
+        if (empty($productMaterials)) {
             throw new Exception("Ürün için gerekli malzemeler bulunamadı.");
         }
     
         // Gerekli malzemelerin stoğunu kontrol et ve düş
-        foreach ($productMaterials as $material) {
-            $requiredQuantity = $material['Quantity'] * $quantity;
+        foreach ($productMaterials as $materialData) {
+            $material = $materialData['material']; // Material nesnesi
+            $requiredQuantity = $materialData['quantity'] * $quantity; // Gerekli miktar
     
-            if ($material['Stock'] < $requiredQuantity) {
-                throw new Exception("Yetersiz stok: " . $material['MaterialID']);
+            if ($material->getStock() < $requiredQuantity) {
+                throw new Exception("Yetersiz stok: " . $material->getName() . " (ID: " . $material->getId() . ")");
             }
     
-            $this->db->execute(
-                "UPDATE Materials SET Stock = Stock - :quantity WHERE MaterialID = :id",
-                [
-                    ':quantity' => $requiredQuantity,
-                    ':id' => $material['MaterialID']
-                ]
-            );
+            // Stok düş
+            $material->reduceStock($requiredQuantity);
         }
     
         // Üretim hesaplamaları
-        $productionTime = $machine['ProductionRate'] * $quantity;
-        $energyUsed = $machine['EnergyConsumption'] * $quantity;
+        $productionTime = $machine->getProductionRate() * $quantity;
+        $energyUsed = $machine->getEnergyConsumption() * $quantity;
     
         // Dinamik karbon ayak izi hesaplama (makinenin sağlığına bağlı)
-        $health = max($machine['Health'], 1); // Sağlık %0 olmamalı, minimum 1 kabul edilir
-        $carbonProduced = $machine['CarbonFootprint'] * $quantity * (100 / $health);
+        $health = max($machine->getHealth(), 1); // Sağlık %0 olmamalı, minimum 1 kabul edilir
+        $carbonProduced = $machine->getCarbonFootprint() * $quantity * (100 / $health);
     
-        // Makine verilerini güncelle
-        $machineInstance = new Machine();
-        $machineInstance->logMachineStats($machineId, $productionTime, $energyUsed, $carbonProduced);
+        // Makine istatistiklerini güncelle
+        $machine->logMachineStats($productionTime, $energyUsed, $carbonProduced);
+        $machine->updateHealth($productionTime);
     
-        // Sağlık durumunu güncelle
-        $machineInstance->updateMachineHealth($machineId, $productionTime);
-    
-        // Satış fiyatını hesapla ve makine fiyat çarpanını uygula
-        $basePrice = array_reduce($productMaterials, function ($total, $material) use ($quantity) {
-            return $total + ($material['CostPerUnit'] * $material['Quantity'] * $quantity);
+        // Satış fiyatını hesapla (malzeme maliyetleri + makine fiyat çarpanı)
+        $basePrice = array_reduce($productMaterials, function ($total, $materialData) use ($quantity) {
+            $material = $materialData['material'];
+            return $total + ($material->getCostPerUnit() * $materialData['quantity'] * $quantity);
         }, 0);
     
-        $salePrice = $basePrice * $machine['PriceMultiplier']; // Fiyat çarpanı uygulanıyor
+        $salePrice = $basePrice * $machine->getPriceMultiplier(); // Fiyat çarpanı uygulanıyor
     
-        // Bakiye güncelle ve işlem kaydet
+        // Bakiyeyi güncelle ve işlem kaydet
+        if (!$this->balance->isBalanceSufficient($salePrice)) {
+            throw new Exception("Bakiye yetersiz, satış gerçekleştirilemez.");
+        }
+    
         $this->balance->updateBalance($salePrice);
         $this->balance->recordTransaction(
             'Satış', 
             $salePrice, 
-            "Satış: Ürün ID {$product['ProductID']}, Adı: {$product['ProductName']}, Miktar: $quantity, Makine: {$machine['MachineName']}"
+            "Satış: Ürün ID {$product->getId()}, Adı: {$product->getName()}, Miktar: $quantity, Makine: {$machine->getName()}"
         );
     
         // Satışı kaydet
@@ -91,8 +72,8 @@ class SalesManager {
             VALUES (:user_id, :product_id, :machine_id, :quantity, :production_time, :energy_used, :carbon_produced, :total_price)",
             [
                 ':user_id' => $userId,
-                ':product_id' => $productId,
-                ':machine_id' => $machineId,
+                ':product_id' => $product->getId(),
+                ':machine_id' => $machine->getId(),
                 ':quantity' => $quantity,
                 ':production_time' => $productionTime,
                 ':energy_used' => $energyUsed,
@@ -103,7 +84,5 @@ class SalesManager {
     
         return "Satış başarıyla kaydedildi.";
     }
-
     
 }
-?>

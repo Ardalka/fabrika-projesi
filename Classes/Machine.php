@@ -1,52 +1,78 @@
 <?php
 require_once '../Core/DB.php';
-require_once '../Classes/Balance.php';
 
 class Machine {
+    private $id;
+    private $name;
+    private $productionRate;
+    private $energyConsumption;
+    private $carbonFootprint;
+    private $priceMultiplier;
+    private $carbonMultiplier;
+    private $health;
+    private $maintenanceCostPerUnit;
     private $db;
 
-    public function __construct() {
-        $this->db = new DB();
-    }
+    public function __construct($id, DB $db) {
+        $this->db = $db;
+        
+        // Makine bilgilerini veritabanından al
+        $machine = $this->db->fetch("SELECT * FROM Machines WHERE MachineID = :id", [':id' => $id]);
 
-    // Tüm Makinelerin Verilerini Alma
-    public function getAllMachines() {
-        return $this->db->fetchAll("SELECT * FROM Machines");
-    }
-
-    // Karbon Ayak İzi Hesaplama Fonksiyonu
-    public function calculateCarbonFootprint($machineId, $baseCarbonFootprint) {
-        $machine = $this->getMachineById($machineId);
         if (!$machine) {
             throw new Exception("Makine bulunamadı.");
         }
-    
-        $health = $machine['Health'];
-        // Sağlık %0 olamaz, minimum 1 olarak kabul edilir.
-        $effectiveHealth = max($health, 1);
-    
-        // Dinamik karbon ayak izi hesaplama
-        return $baseCarbonFootprint * (100 / $effectiveHealth);
-    }
-    
-    // Id'sine Göre Makine Verisini Alma
-    public function getMachineById($machineId) {
-        return $this->db->fetch(
-            "SELECT * FROM Machines WHERE MachineID = :machine_id",
-            [':machine_id' => $machineId]
-        );
+
+        $this->id = $machine['MachineID'];
+        $this->name = $machine['MachineName'];
+        $this->productionRate = $machine['ProductionRate'];
+        $this->energyConsumption = $machine['EnergyConsumption'];
+        $this->carbonFootprint = $machine['CarbonFootprint'];
+        $this->priceMultiplier = $machine['PriceMultiplier'];
+        $this->carbonMultiplier = $machine['CarbonMultiplier'];
+        $this->health = $machine['Health'];
+        $this->maintenanceCostPerUnit = $machine['MaintenanceCostPerUnit'];
     }
 
-    // Makine Hareketlerinin Verilerini Alma
-    public function getMachineStats($machineId) {
-        return $this->db->fetch(
-            "SELECT * FROM MachineStats WHERE MachineID = :machineId",
-            [':machineId' => $machineId]
-        );
+    // GETTER METOTLARI
+    public function getId() {
+        return $this->id;
     }
 
-    // Makine Hareketlerine Veri Girişi Fonksiyonu
-    public function logMachineStats($machineId, $workTime, $energyUsed, $carbonProduced) {
+    public function getName() {
+        return $this->name;
+    }
+
+    public function getProductionRate() {
+        return $this->productionRate;
+    }
+
+    public function getEnergyConsumption() {
+        return $this->energyConsumption;
+    }
+
+    public function getCarbonFootprint() {
+        return $this->carbonFootprint;
+    }
+
+    public function getPriceMultiplier() {
+        return $this->priceMultiplier;
+    }
+
+    public function getHealth() {
+        return $this->health;
+    }
+
+    public function getCarbonMultiplier() {
+        return $this->carbonMultiplier;
+    }
+
+    public function getMaintenanceCostPerUnit() {
+        return $this->maintenanceCostPerUnit;
+    }
+
+    // 🔴 MAKİNE KULLANIM VERİLERİNİ GÜNCELLEYEN METOT
+    public function logMachineStats($workTime, $energyUsed, $carbonProduced) {
         $this->db->execute(
             "UPDATE MachineStats SET 
              TotalWorkTime = TotalWorkTime + :workTime,
@@ -57,66 +83,60 @@ class Machine {
                 ':workTime' => $workTime,
                 ':energyUsed' => $energyUsed,
                 ':carbonProduced' => $carbonProduced,
-                ':machineId' => $machineId
+                ':machineId' => $this->id
             ]
         );
     }
 
-    // Makine Sağlığını Güncelleme Fonksiyonu
-    public function updateMachineHealth($machineId, $usageHours) {
-        $healthReduction = $usageHours * 0.5; // Örnek: Saat başına %0.5 azalma
+    public function getMachineStats() {
+        $stats = $this->db->fetch(
+            "SELECT TotalWorkTime, TotalEnergyUsed, TotalCarbonProduced 
+             FROM MachineStats 
+             WHERE MachineID = :machineId",
+            [':machineId' => $this->id]
+        );
+    
+        return $stats ?: ['TotalWorkTime' => 0, 'TotalEnergyUsed' => 0, 'TotalCarbonProduced' => 0];
+    }
+    
 
+    // 🔴 MAKİNE SAĞLIĞINI GÜNCELLEYEN METOT
+    public function updateHealth($usageHours) {
+        $healthReduction = $usageHours * 0.5; // Örnek olarak saat başına %0.5 azalma
+        
+        $this->health = max($this->health - $healthReduction, 0);
+        
         $this->db->execute(
-            "UPDATE Machines SET Health = GREATEST(Health - :health_reduction, 0) WHERE MachineID = :machine_id",
+            "UPDATE Machines SET Health = :health WHERE MachineID = :machine_id",
             [
-                ':health_reduction' => $healthReduction,
-                ':machine_id' => $machineId
+                ':health' => $this->health,
+                ':machine_id' => $this->id
             ]
         );
     }
 
-    // Makine Bakımını Yapma Fonksiyonu
-    public function performMaintenance($machineId) {
-        // Makine bilgilerini al
-        $machine = $this->db->fetch(
-            "SELECT MachineID, Health, MaintenanceCostPerUnit FROM Machines WHERE MachineID = :machine_id",
-            [':machine_id' => $machineId]
-        );
-    
-        if (!$machine) {
-            throw new Exception("Makine bulunamadı.");
-        }
-    
-        // Sağlık durumuna göre bakım maliyetini hesapla
-        $healthDeficit = 100 - $machine['Health']; // Eksik sağlık miktarı
-        $maintenanceCost = $healthDeficit * $machine['MaintenanceCostPerUnit'];
-    
-        if ($healthDeficit <= 0) {
+    // 🔴 MAKİNE BAKIM METODU
+    public function performMaintenance() {
+        if ($this->health >= 100) {
             throw new Exception("Makine zaten tam sağlık durumunda.");
         }
-    
-        // Bakiyeyi güncelle
-        $balance = new Balance();
-        $balance->updateBalance(-$maintenanceCost);
-        $balance->recordTransaction(
-            'Bakım',
-            $maintenanceCost,
-            "Makine Bakımı: {$machineId} - Sağlık Artışı: {$healthDeficit}%"
-        );
-    
-        // Makineyi tam sağlığa geri döndür
+
+        // Bakım maliyetini hesapla
+        $healthDeficit = 100 - $this->health;
+        $maintenanceCost = $healthDeficit * $this->maintenanceCostPerUnit;
+
+        // Bakiye kontrolü için Balance sınıfı çağırılabilir (Balance sınıfını güncelleyerek yapılabilir)
+
+        // Sağlığı %100'e çıkar
+        $this->health = 100;
         $this->db->execute(
             "UPDATE Machines SET Health = 100 WHERE MachineID = :machine_id",
-            [':machine_id' => $machineId]
+            [':machine_id' => $this->id]
         );
-    
-        // Toplam çalışma süresini sıfırla
-        $this->db->execute(
-            "UPDATE MachineStats SET TotalWorkTime = 0 WHERE MachineID = :machine_id",
-            [':machine_id' => $machineId]
-        );
-    
+
         return "Bakım başarıyla tamamlandı. Maliyet: {$maintenanceCost} TL";
     }
-    
+
+
 }
+?>

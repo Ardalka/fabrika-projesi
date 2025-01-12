@@ -1,6 +1,9 @@
 <?php
 require_once '../Core/DB.php';
 require_once '../Classes/Navbar.php';
+require_once '../Classes/Product.php';
+require_once '../Classes/Balance.php';
+require_once '../Classes/Material.php';
 
 session_start();
 
@@ -9,15 +12,19 @@ $userRole = isset($_SESSION['role']) ? $_SESSION['role'] : 'user';
 $navbar = new Navbar($userRole);
 
 $db = new DB();
+$balance = new Balance();
 
-// Tüm ürünleri ve malzemeleri al
-$products = $db->fetchAll("SELECT * FROM Products");
-$productMaterials = $db->fetchAll("
-    SELECT p.ProductID, m.MaterialName, pm.Quantity 
-    FROM ProductMaterials pm
-    JOIN Materials m ON pm.MaterialID = m.MaterialID
-    JOIN Products p ON pm.ProductID = p.ProductID
-");
+// Ürünleri nesne olarak oluştur
+$productObjects = [
+    new Product(1, $db),
+    new Product(2, $db),
+    new Product(3, $db),
+    new Product(4, $db),
+    new Product(5, $db),
+    new Product(6, $db),
+    new Product(7, $db),
+    new Product(8, $db)
+];
 ?>
 
 <!DOCTYPE html>
@@ -39,16 +46,16 @@ $productMaterials = $db->fetchAll("
 <div class="container mt-4">
     <h1 class="text-center">Parçalar</h1>
     <div class="row">
-        <?php foreach ($products as $product): ?>
+        <?php foreach ($productObjects as $product): ?>
             <div class="col-md-4 mb-4">
                 <div class="card h-100">
-                    <img src="<?= htmlspecialchars($product['ImagePath'] ?? 'Pics/default.jpg') ?>" 
+                    <img src="<?= htmlspecialchars($product->getImagePath() ?? 'Pics/default.jpg') ?>" 
                          class="card-img-top" 
-                         alt="<?= htmlspecialchars($product['ProductName']) ?>">
+                         alt="<?= htmlspecialchars($product->getName()) ?>">
                     <div class="card-body">
-                        <h5 class="card-title text-center"><?= htmlspecialchars($product['ProductName']) ?></h5>
+                        <h5 class="card-title text-center"><?= htmlspecialchars($product->getName()) ?></h5>
                         <p class="card-text text-muted text-center">
-                            <?= htmlspecialchars($product['Description'] ?? 'Açıklama bulunmamaktadır.') ?>
+                            <?= htmlspecialchars($product->getDescription() ?? 'Açıklama bulunmamaktadır.') ?>
                         </p>
                         <h6>Malzemeler:</h6>
                         <table class="table table-sm">
@@ -59,13 +66,11 @@ $productMaterials = $db->fetchAll("
                                 </tr>
                             </thead>
                             <tbody>
-                                <?php foreach ($productMaterials as $material): ?>
-                                    <?php if ($material['ProductID'] == $product['ProductID']): ?>
-                                        <tr>
-                                            <td><?= htmlspecialchars($material['MaterialName']) ?></td>
-                                            <td><?= $material['Quantity'] ?> adet</td>
-                                        </tr>
-                                    <?php endif; ?>
+                                <?php foreach ($product->getMaterials() as $materialData): ?>
+                                    <tr>
+                                        <td><?= htmlspecialchars($materialData['material']->getName()) ?></td>
+                                        <td><?= $materialData['quantity'] ?> adet</td>
+                                    </tr>
                                 <?php endforeach; ?>
                             </tbody>
                         </table>
